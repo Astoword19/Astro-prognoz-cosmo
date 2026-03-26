@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Совместимость → Синастрия + Композит</title>
+<meta name="theme-color" content="#0d0e12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=DM+Sans:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: radial-gradient(circle at top center, #1c1d24 0%, #0d0e12 100%); color: #e2e8f0; font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; -webkit-text-size-adjust: 100%; line-height: 1.6; }
+  ::selection { background: rgba(203, 167, 123, 0.4); color: #fff; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+  .header { padding: 40px 0 20px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .header-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding: 0; }
+  h1 { font-family: 'DM Sans', sans-serif; font-size: 24px; font-weight: 500; color: #ffffff; letter-spacing: -0.5px; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #64748b; margin-top: 6px; }
+  .status { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 6px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+  .status.ok { background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+  .status.loading { background: rgba(250,204,21,0.1); color: #facc15; border: 1px solid rgba(250,204,21,0.2); }
+  .status.err { background: rgba(248,113,113,0.1); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
+  .nav-wrap { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .nav-btn { padding: 8px 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #cba77b; font-size: 12px; font-weight: 500; text-decoration: none; font-family: 'DM Sans', sans-serif; transition: all 0.3s ease; white-space: nowrap; }
+  .nav-btn:hover { background: rgba(203,167,123,0.1); border-color: #cba77b; color: #fff; }
+  .form-wrap { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 32px; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+  .section-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: #cba77b; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 18px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; gap: 16px; } }
+  .full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 500; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+  input, select { width: 100%; padding: 12px 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #f1f5f9; font-size: 14px; font-family: 'IBM Plex Mono', monospace; outline: none; transition: all 0.3s ease; -webkit-appearance: none; }
+  input:focus, select:focus { border-color: #cba77b; background: rgba(0,0,0,0.4); box-shadow: 0 0 0 3px rgba(203,167,123,0.1); }
+  input::placeholder { color: #475569; }
+  .row { display: flex; gap: 16px; }
+  .row > * { flex: 1; }
+  .gender-row { display: flex; gap: 12px; }
+  .gender-option { display: flex; align-items: center; cursor: pointer; flex: 1; }
+  .gender-option input[type="radio"] { display: none; }
+  .gender-label { display: block; width: 100%; text-align: center; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #94a3b8; font-weight: 500; transition: all 0.3s; font-family: 'IBM Plex Mono', monospace; font-size: 14px; }
+  .gender-option input[type="radio"]:checked + .gender-label { border-color: #cba77b; color: #fff; background: rgba(203,167,123,0.1); box-shadow: inset 0 0 0 1px rgba(203,167,123,0.3); }
+  .btn { margin-top: 24px; width: 100%; padding: 16px; background: linear-gradient(135deg, #dfc39d, #cba77b); color: #0d0e12; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(203,167,123,0.2); font-family: 'DM Sans', sans-serif; }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(203,167,123,0.3); background: linear-gradient(135deg, #ebd1ae, #d4b288); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+  .out-wrap { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 32px; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+  .out-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .out-title { font-size: 12px; color: #cba77b; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; }
+  .copy-btn { padding: 8px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #f1f5f9; font-size: 12px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .copy-btn:hover { background: rgba(255,255,255,0.1); }
+  .copy-btn.copied { background: #4ade80; color: #0d0e12; border-color: #4ade80; }
+  textarea { width: 100%; padding: 24px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; color: #e2e8f0; font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 1.8; resize: vertical; outline: none; }
+  .error { color: #f87171; margin-top: 12px; font-size: 12px; text-align: center; }
+  .footer { padding: 16px 16px 40px; font-size: 12px; color: #475569; text-align: center; border-top: none; }
+  .footer p { margin-bottom: 4px; }
+  .autocomplete { position: relative; }
+  .autocomplete-items { position: absolute; z-index: 99; top: calc(100% + 6px); left: 0; right: 0; background: #181a20; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow-y: auto; max-height: 250px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+  .autocomplete-items div { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); color: #e2e8f0; transition: background 0.2s; }
+  .autocomplete-items div:last-child { border-bottom: none; }
+  .autocomplete-items div:hover { background-color: rgba(203,167,123,0.08); color: #fff; }
+  .city-name { font-weight: 500; font-size: 14px; color: #fff; }
+  .city-region { font-size: 12px; color: #64748b; margin-left: 6px; }
+  .city-tz { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #475569; margin-top: 4px; }
+  .check-row { display: flex; gap: 10px; align-items: center; cursor: pointer; font-size: 13px; color: #e2e8f0; margin-bottom: 8px; }
+  .check-row input[type="checkbox"] { accent-color: #cba77b; width: 16px; height: 16px; cursor: pointer; }
+  .toggle-row { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; padding: 12px 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; transition: all 0.2s; }
+  .toggle-row:hover { border-color: rgba(255,255,255,0.15); }
+  .toggle-row.active { border-color: #cba77b; }
+  .toggle-check { width: 18px; height: 18px; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.2s; flex-shrink: 0; }
+  .toggle-row.active .toggle-check { border-color: #cba77b; background: #cba77b; color: #0d0e12; }
+  .toggle-text { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', monospace; }
+  .toggle-row.active .toggle-text { color: #cba77b; }
+</style>
+</head>
+<body>
+
+<div class="wrap"><div class="header"><div class="header-inner">
+  <div><h1>Совместимость</h1><p class="sub">Синастрия → Композит → Прогрессии</p></div>
+  <div class="nav-wrap">
+    <span class="status loading" id="sweStatus">загрузка...</span>
+    <a href="index.html" class="nav-btn">Натальная</a>
+    <a href="natal-transits.html" class="nav-btn">Н+Транзиты</a>
+    <a href="transits.html" class="nav-btn">Транзиты</a>
+    <a href="solar.html" class="nav-btn">Соляр</a>
+    <a href="lunar.html" class="nav-btn">Лунар</a>
+    <a href="relocation.html" class="nav-btn">Релокация</a>
+    <a href="combo.html" class="nav-btn">Комбо</a>
+  </div>
+</div></div></div>
+
+<div class="wrap form-wrap">
+  <div class="grid">
+
+    <!-- ── Партнёр 1 ── -->
+    <div class="full"><div class="section-title">Партнёр 1</div></div>
+    <div class="full"><label>Имя</label><input id="nameA" placeholder="Имя" autocomplete="off"></div>
+    <div><label>Дата рождения</label><input type="date" id="dateA" value="1990-03-21"></div>
+    <div id="timeFieldA"><label>Время рождения</label><input type="time" id="timeA" value="14:30"></div>
+    <div>
+      <label>&nbsp;</label>
+      <input type="checkbox" id="unknownTimeA" style="display:none;">
+      <div class="toggle-row" id="unknownTimeToggleA" onclick="document.getElementById('unknownTimeA').checked=!document.getElementById('unknownTimeA').checked; this.classList.toggle('active'); document.getElementById('timeFieldA').style.opacity=this.classList.contains('active')?'0.3':'1'; document.getElementById('timeFieldA').style.pointerEvents=this.classList.contains('active')?'none':'auto';">
+        <span class="toggle-check"></span>
+        <span class="toggle-text">Время неизвестно</span>
+      </div>
+    </div>
+    <div>
+      <label>Город рождения</label>
+      <div class="autocomplete"><input id="cityA" placeholder="Начните вводить..." autocomplete="off"></div>
+    </div>
+    <div>
+      <label>Пол</label>
+      <div class="gender-row">
+        <label class="gender-option"><input type="radio" name="genderA" value="М" checked><span class="gender-label">М</span></label>
+        <label class="gender-option"><input type="radio" name="genderA" value="Ж"><span class="gender-label">Ж</span></label>
+      </div>
+    </div>
+    <div class="full">
+      <div class="row">
+        <div><label>Широта</label><input id="latA" placeholder="55.7558"></div>
+        <div><label>Долгота</label><input id="lonA" placeholder="37.6173"></div>
+      </div>
+    </div>
+    <div class="full"><label>Часовой пояс (IANA)</label><input id="tzA" placeholder="Europe/Moscow"></div>
+
+    <!-- ── Партнёр 2 ── -->
+    <div class="full"><div class="section-title">Партнёр 2</div></div>
+    <div class="full"><label>Имя</label><input id="nameB" placeholder="Имя" autocomplete="off"></div>
+    <div><label>Дата рождения</label><input type="date" id="dateB" value="1992-05-15"></div>
+    <div id="timeFieldB"><label>Время рождения</label><input type="time" id="timeB" value="12:00"></div>
+    <div>
+      <label>&nbsp;</label>
+      <input type="checkbox" id="unknownTimeB" style="display:none;">
+      <div class="toggle-row" id="unknownTimeToggleB" onclick="document.getElementById('unknownTimeB').checked=!document.getElementById('unknownTimeB').checked; this.classList.toggle('active'); document.getElementById('timeFieldB').style.opacity=this.classList.contains('active')?'0.3':'1'; document.getElementById('timeFieldB').style.pointerEvents=this.classList.contains('active')?'none':'auto';">
+        <span class="toggle-check"></span>
+        <span class="toggle-text">Время неизвестно</span>
+      </div>
+    </div>
+    <div>
+      <label>Город рождения</label>
+      <div class="autocomplete"><input id="cityB" placeholder="Начните вводить..." autocomplete="off"></div>
+    </div>
+    <div>
+      <label>Пол</label>
+      <div class="gender-row">
+        <label class="gender-option"><input type="radio" name="genderB" value="М"><span class="gender-label">М</span></label>
+        <label class="gender-option"><input type="radio" name="genderB" value="Ж" checked><span class="gender-label">Ж</span></label>
+      </div>
+    </div>
+    <div class="full">
+      <div class="row">
+        <div><label>Широта</label><input id="latB" placeholder="55.7558"></div>
+        <div><label>Долгота</label><input id="lonB" placeholder="37.6173"></div>
+      </div>
+    </div>
+    <div class="full"><label>Часовой пояс (IANA)</label><input id="tzB" placeholder="Europe/Moscow"></div>
+
+    <!-- ── Настройки ── -->
+    <div class="full"><div class="section-title">Дополнительные методы</div></div>
+    <div>
+      <label class="check-row"><input type="checkbox" id="calcComposite"> Композит (средние точки)</label>
+      <label class="check-row"><input type="checkbox" id="calcProgSynastry"> Прогрессивная синастрия</label>
+    </div>
+    <div>
+      <label class="check-row"><input type="checkbox" id="calcProgComposite"> Прогрессивный композит</label>
+    </div>
+    <div class="full" id="targetDateBlock">
+      <label>Дата для прогрессий</label>
+      <input type="date" id="targetDate">
+    </div>
+
+  </div>
+  <button class="btn" id="calcBtn" onclick="window.calcCompat()">РАССЧИТАТЬ СОВМЕСТИМОСТЬ</button>
+  <div id="error" class="error"></div>
+</div>
+
+<div class="wrap" id="resultBlock" style="display:none;">
+  <div class="out-wrap">
+    <div class="out-head">
+      <span class="out-title">Совместимость — готово к копированию</span>
+      <button class="copy-btn" id="copyBtn" onclick="window.copyText()">⎘ Копировать</button>
+    </div>
+    <textarea id="output" rows="80" readonly></textarea>
+  </div>
+</div>
+
+<div class="wrap"><div class="footer">
+  <p>Swiss Ephemeris (WebAssembly) — точность ±0.001°</p>
+  <p>moment-timezone — историческая база часовых поясов IANA/Olson</p>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.45/moment-timezone-with-data.min.js"></script>
+
+<script type="module">
+
+let swe = null;
+const SE_SUN = 0, SE_MOON = 1, SE_MERCURY = 2, SE_VENUS = 3, SE_MARS = 4;
+const SE_JUPITER = 5, SE_SATURN = 6, SE_URANUS = 7, SE_NEPTUNE = 8, SE_PLUTO = 9;
+const SE_TRUE_NODE = 11, SE_MEAN_APOG = 12, SE_CHIRON = 15;
+const SEFLG_SPEED = 256, SE_GREG_CAL = 1;
+
+const SE_BODIES = {
+  sun: SE_SUN, moon: SE_MOON, mercury: SE_MERCURY, venus: SE_VENUS,
+  mars: SE_MARS, jupiter: SE_JUPITER, saturn: SE_SATURN, uranus: SE_URANUS,
+  neptune: SE_NEPTUNE, pluto: SE_PLUTO, north_node: SE_TRUE_NODE,
+  lilith: SE_MEAN_APOG, chiron: SE_CHIRON
+};
+
+const SIGNS = ['Овен','Телец','Близнецы','Рак','Лев','Дева',
+               'Весы','Скорпион','Стрелец','Козерог','Водолей','Рыбы'];
+
+const PLANET_NAMES = {
+  sun:'Солнце', moon:'Луна', mercury:'Меркурий', venus:'Венера',
+  mars:'Марс', jupiter:'Юпитер', saturn:'Сатурн', uranus:'Уран',
+  neptune:'Нептун', pluto:'Плутон', north_node:'Сев. узел (Раху)',
+  south_node:'Юж. узел (Кету)', lilith:'Лилит (Черная Луна)',
+  selena:'Селена (Белая Луна)', chiron:'Хирон', vertex:'Вертекс',
+  pars_fortuna:'Парс Фортуны', asc:'Асцендент', mc:'Середина Неба',
+};
+
+const PLANET_ORDER = [
+  'sun','moon','mercury','venus','mars','jupiter',
+  'saturn','uranus','neptune','pluto',
+  'north_node','south_node','lilith','selena','chiron'
+];
+
+// Синастрические аспекты (классика, орбы чуть уже натальных)
+const SYNASTRY_ASPECT_DEFS = [
+  { name: 'Соединение', angle: 0,   orb: 6 },
+  { name: 'Секстиль',   angle: 60,  orb: 4 },
+  { name: 'Квадратура',  angle: 90,  orb: 6 },
+  { name: 'Тригон',      angle: 120, orb: 6 },
+  { name: 'Квиконс',     angle: 150, orb: 3 },
+  { name: 'Оппозиция',   angle: 180, orb: 6 },
+];
+
+// Натальные аспекты (для внутренних аспектов композита)
+const NATAL_ASPECT_DEFS = [
+  { name: 'Соединение', angle: 0,   orb: 8 },
+  { name: 'Секстиль',   angle: 60,  orb: 6 },
+  { name: 'Квадратура',  angle: 90,  orb: 8 },
+  { name: 'Тригон',      angle: 120, orb: 8 },
+  { name: 'Квиконс',     angle: 150, orb: 4 },
+  { name: 'Оппозиция',   angle: 180, orb: 8 },
+];
+
+// Прогрессии (орб ≤1°)
+const PROG_ASPECT_DEFS = [
+  { name: 'Соединение', angle: 0,   orb: 1 },
+  { name: 'Секстиль',   angle: 60,  orb: 1 },
+  { name: 'Квадратура',  angle: 90,  orb: 1 },
+  { name: 'Тригон',      angle: 120, orb: 1 },
+  { name: 'Оппозиция',   angle: 180, orb: 1 },
+];
+
+// ═══ Утилиты ═══
+
+function norm(d) { let r = d % 360; return r < 0 ? r + 360 : r; }
+const toDeg = r => r * 180 / Math.PI;
+const toRad = d => d * Math.PI / 180;
+
+function degToSign(deg) {
+  if (isNaN(deg)) return { sign: 'Ошибка', signIndex: 0, degree: 0, minute: 0, second: 0, absolute: 0 };
+  const d = norm(deg), idx = Math.floor(d / 30), rem = d % 30;
+  return { sign: SIGNS[idx], signIndex: idx, degree: Math.floor(rem),
+    minute: Math.floor((rem % 1) * 60), second: Math.floor(((rem % 1) * 60 % 1) * 60), absolute: d };
+}
+
+function fmtDeg(deg) {
+  if (isNaN(deg)) return '—';
+  const i = degToSign(deg);
+  return `${i.degree}\u00B0${String(i.minute).padStart(2,'0')}'${String(i.second).padStart(2,'0')}" ${i.sign}`;
+}
+
+function houseOf(deg, cusps) {
+  if (!cusps || cusps.length < 12 || isNaN(deg)) return 1;
+  const d = norm(deg);
+  for (let i = 0; i < 12; i++) {
+    const s = cusps[i], e = cusps[(i + 1) % 12];
+    if (s > e) { if (d >= s || d < e) return i + 1; }
+    else       { if (d >= s && d < e) return i + 1; }
+  }
+  return 1;
+}
+
+// ═══ SWE обёртки ═══
+
+function sweJulday(y, m, d, h) {
+  return (swe.julday || swe.swe_julday).call(swe, y, m, d, h, SE_GREG_CAL);
+}
+
+function sweCalcUt(jd, body) {
+  const r = (swe.calc_ut || swe.swe_calc_ut).call(swe, jd, body, SEFLG_SPEED);
+  if (r && r.data && Array.isArray(r.data)) return r.data;
+  if (r && r.xx) return r.xx;
+  if (Array.isArray(r)) return r;
+  if (r && r.longitude !== undefined) return [r.longitude, r.latitude||0, r.distance||0, r.longitudeSpeed||0];
+  if (r && typeof r === 'object') { const v = Object.values(r).filter(x => typeof x === 'number'); if (v.length >= 4) return v; }
+  return [0, 0, 0, 0];
+}
+
+function sweHouses(jd, lat, lon) {
+  const r = (swe.houses || swe.swe_houses).call(swe, jd, lat, lon, 'P'.charCodeAt(0));
+  let cusps = [], ascmc = [];
+  if (r) {
+    cusps = r.cusps || r.house || r.houses || (r.data && (r.data.houses || r.data.cusps || r.data.house)) || [];
+    ascmc = r.ascmc || r.points || (r.data && (r.data.ascmc || r.data.points)) || [];
+    if (Array.isArray(r) && r.length === 2) { cusps = r[0]; ascmc = r[1]; }
+  }
+  if (cusps.length === 13) cusps = cusps.slice(1);
+  return { cusps, ascmc };
+}
+
+function calcSelena(jd) { return norm(242.606 + 0.14084795 * (jd - 2451545.0)); }
+
+function calcPositions(jd) {
+  const pos = {};
+  for (const [name, bodyCode] of Object.entries(SE_BODIES)) {
+    const data = sweCalcUt(jd, bodyCode);
+    pos[name] = { longitude: norm(data[0]), speed: data[3] || 0, retrograde: (data[3] || 0) < 0 };
+  }
+  if (pos.north_node) {
+    pos.north_node.retrograde = true;
+    pos.south_node = { longitude: norm(pos.north_node.longitude + 180), retrograde: true, speed: -(pos.north_node.speed || 0) };
+  }
+  pos.selena = { longitude: calcSelena(jd), retrograde: false, speed: 0.111 };
+  return pos;
+}
+
+function calcAllHouses(jd, lat, lon) {
+  const { cusps, ascmc } = sweHouses(jd, lat, lon);
+  const asc = (ascmc[0] !== undefined && !isNaN(ascmc[0])) ? ascmc[0] : 0;
+  const mc = (ascmc[1] !== undefined && !isNaN(ascmc[1])) ? ascmc[1] : 0;
+  const vertex = (ascmc[3] !== undefined && !isNaN(ascmc[3])) ? ascmc[3] : 0;
+  let fc = cusps;
+  if (fc.length < 12 && asc) { fc = []; for (let i = 0; i < 12; i++) fc.push(norm(asc + i * 30)); }
+  return { cusps: fc, asc: norm(asc), mc: norm(mc), vertex: norm(vertex) };
+}
+
+function localToUTC(year, month, day, hour, minute, tz) {
+  const ds = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+  const cleanTz = String(tz).trim();
+  let loc;
+  const isOff = /^[-+]?\d+(\.\d+)?$/.test(cleanTz) || /^[-+]?\d{1,2}:\d{2}$/.test(cleanTz);
+  if (isOff) loc = moment(ds, 'YYYY-MM-DD HH:mm').utcOffset(parseFloat(cleanTz), true);
+  else loc = moment.tz(ds, 'YYYY-MM-DD HH:mm', cleanTz);
+  if (!loc.isValid()) throw new Error('Невалидная дата/пояс: ' + ds + ' / ' + cleanTz);
+  const off = loc.utcOffset() / 60;
+  let abbr = loc.format('z');
+  if (isOff) abbr = 'UTC' + (off >= 0 ? '+' : '') + off;
+  const u = loc.clone().utc();
+  return { year: u.year(), month: u.month()+1, day: u.date(), hour: u.hour(), minute: u.minute(), second: u.second(), utcOffset: off, tzAbbr: abbr };
+}
+
+// Подготовка полной карты: позиции + дома + Парс Фортуны + углы
+// unknownTime=true → рассчитываем только планетарные позиции, без домов/углов
+function buildFullChart(jd, lat, lon, unknownTime) {
+  const pos = calcPositions(jd);
+  let houses = null;
+  if (!unknownTime) {
+    houses = calcAllHouses(jd, lat, lon);
+    if (pos.sun && pos.moon && !isNaN(houses.asc)) {
+      const sunH = houseOf(pos.sun.longitude, houses.cusps);
+      const isDay = sunH >= 7 && sunH <= 12;
+      pos.pars_fortuna = { longitude: isDay ? norm(houses.asc + pos.moon.longitude - pos.sun.longitude) : norm(houses.asc + pos.sun.longitude - pos.moon.longitude), retrograde: false, speed: 0 };
+    }
+    if (!isNaN(houses.vertex)) pos.vertex = { longitude: houses.vertex, retrograde: false, speed: 0, isAngle: true };
+    pos.asc = { longitude: houses.asc, retrograde: false, speed: 0, isAngle: true };
+    pos.mc = { longitude: houses.mc, retrograde: false, speed: 0, isAngle: true };
+  }
+  return { pos, houses, unknownTime: !!unknownTime };
+}
+
+// ═══ Синастрические кросс-аспекты ═══
+
+function calcSynastryAspects(posA, posB, aspectDefs) {
+  const asp = [];
+  const keysA = [...PLANET_ORDER, 'vertex', 'pars_fortuna', 'asc', 'mc'];
+  const keysB = [...PLANET_ORDER, 'vertex', 'pars_fortuna', 'asc', 'mc'];
+  const fic = ['north_node','south_node','lilith','selena','vertex','pars_fortuna'];
+
+  for (const k1 of keysA) {
+    if (!posA[k1] || isNaN(posA[k1].longitude)) continue;
+    for (const k2 of keysB) {
+      if (!posB[k2] || isNaN(posB[k2].longitude)) continue;
+      let d = Math.abs(posA[k1].longitude - posB[k2].longitude);
+      if (d > 180) d = 360 - d;
+
+      const isLum = k1==='sun'||k1==='moon'||k2==='sun'||k2==='moon';
+      const isAngPt = ['asc','mc'].includes(k1) || ['asc','mc'].includes(k2);
+      const isFic = fic.includes(k1) || fic.includes(k2);
+
+      for (const a of aspectDefs) {
+        let orb = a.orb;
+        if (isLum) orb = Math.min(orb + 2, 8);
+        if (isAngPt) orb = Math.min(orb + 1, 8);
+        if (isFic && !isAngPt) orb *= 0.6;
+        const o = Math.abs(d - a.angle);
+        if (o <= orb) {
+          asp.push({ planetA: k1, planetB: k2, type: a.name, orb: o.toFixed(2), orbNum: o });
+        }
+      }
+    }
+  }
+  return asp.sort((a, b) => a.orbNum - b.orbNum);
+}
+
+// ═══ Внутренние аспекты (натальные или композита) ═══
+
+function calcInternalAspects(pos, aspectDefs) {
+  const asp = [], keys = Object.keys(pos);
+  const skipPairs = new Set(['asc|mc', 'asc|vertex', 'mc|vertex']);
+  const fic = ['north_node','south_node','lilith','selena','vertex','pars_fortuna'];
+  for (let i = 0; i < keys.length; i++) for (let j = i+1; j < keys.length; j++) {
+    const k1 = keys[i], k2 = keys[j];
+    if (skipPairs.has([k1,k2].sort().join('|'))) continue;
+    if (!pos[k1] || !pos[k2] || isNaN(pos[k1].longitude) || isNaN(pos[k2].longitude)) continue;
+    let d = Math.abs(pos[k1].longitude - pos[k2].longitude); if (d > 180) d = 360 - d;
+    const isLum = k1==='sun'||k1==='moon'||k2==='sun'||k2==='moon';
+    const isAngPt = ['asc','mc'].includes(k1) || ['asc','mc'].includes(k2);
+    const isFic = fic.includes(k1) || fic.includes(k2);
+    for (const a of aspectDefs) {
+      let orb = a.orb;
+      if (isLum) orb += 2;
+      if (isFic && !isAngPt) orb *= 0.8;
+      const o = Math.abs(d - a.angle);
+      if (o <= orb) {
+        const s1 = pos[k1].speed||0, s2 = pos[k2].speed||0, sd = s1-s2;
+        let ap = null;
+        if (d < a.angle) ap = sd > 0 ? false : true; else ap = sd > 0 ? true : false;
+        asp.push({ planet1: k1, planet2: k2, type: a.name, orb: o.toFixed(2), applying: ap });
+      }
+    }
+  }
+  return asp.sort((a,b) => parseFloat(a.orb) - parseFloat(b.orb));
+}
+
+// ═══ Композит (средние точки по короткой дуге) ═══
+
+function calcCompositePositions(posA, posB) {
+  const comp = {};
+  const allKeys = [...PLANET_ORDER, 'vertex', 'pars_fortuna', 'asc', 'mc'];
+  for (const k of allKeys) {
+    if (!posA[k] || !posB[k] || isNaN(posA[k].longitude) || isNaN(posB[k].longitude)) continue;
+    const p1 = posA[k].longitude, p2 = posB[k].longitude;
+    let diff = Math.abs(p1 - p2);
+    let mid = (p1 + p2) / 2;
+    if (diff > 180) mid = norm(mid + 180);
+    comp[k] = { longitude: norm(mid), retrograde: false, speed: 0 };
+  }
+  return comp;
+}
+
+function calcCompositeHouses(housesA, housesB) {
+  if (!housesA.cusps || !housesB.cusps || housesA.cusps.length < 12 || housesB.cusps.length < 12) return null;
+  const cusps = [];
+  for (let i = 0; i < 12; i++) {
+    const p1 = housesA.cusps[i], p2 = housesB.cusps[i];
+    let diff = Math.abs(p1 - p2);
+    let mid = (p1 + p2) / 2;
+    if (diff > 180) mid = norm(mid + 180);
+    cusps.push(norm(mid));
+  }
+  let ascMid = (housesA.asc + housesB.asc) / 2;
+  if (Math.abs(housesA.asc - housesB.asc) > 180) ascMid = norm(ascMid + 180);
+  let mcMid = (housesA.mc + housesB.mc) / 2;
+  if (Math.abs(housesA.mc - housesB.mc) > 180) mcMid = norm(mcMid + 180);
+  return { cusps, asc: norm(ascMid), mc: norm(mcMid) };
+}
+
+// ═══ Прогрессии (1 день = 1 тропический год) ═══
+
+function getProgressedJD(birthJD, targetJD) {
+  const ageInDays = targetJD - birthJD;
+  return birthJD + ageInDays / 365.242199;
+}
+
+// ═══ Инициализация SWE ═══
+
+async function initSWE() {
+  const el = document.getElementById('sweStatus');
+  try {
+    const mod = await import('https://cdn.jsdelivr.net/gh/prolaxu/swisseph-wasm@main/src/swisseph.js');
+    swe = new (mod.default || mod)();
+    await swe.initSwissEph();
+    el.textContent = 'готово'; el.className = 'status ok';
+  } catch(e) {
+    console.error('[SWE] Init failed:', e);
+    el.textContent = 'ошибка'; el.className = 'status err';
+  }
+}
+
+document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
+
+// ═══════════════════════════════════════════════════════════
+// ГЛАВНАЯ ФУНКЦИЯ РАСЧЁТА СОВМЕСТИМОСТИ
+// ═══════════════════════════════════════════════════════════
+
+window.calcCompat = function() {
+  const errEl = document.getElementById('error');
+  errEl.textContent = '';
+  if (!swe) { errEl.textContent = 'Swiss Ephemeris ещё загружается...'; return; }
+  const btn = document.getElementById('calcBtn');
+  btn.disabled = true; btn.textContent = 'РАСЧЁТ...';
+
+  try {
+    // ── Данные Персоны A ──
+    const dA = document.getElementById('dateA').value;
+    const unknownTimeA = document.getElementById('unknownTimeA').checked;
+    const tA = unknownTimeA ? '12:00' : document.getElementById('timeA').value;
+    const latA = parseFloat(document.getElementById('latA').value);
+    const lonA = parseFloat(document.getElementById('lonA').value);
+    const tzA = document.getElementById('tzA').value;
+    const nameA = document.getElementById('nameA').value || 'Партнёр 1';
+    const genderA = document.querySelector('input[name="genderA"]:checked').value;
+    const cityA = document.getElementById('cityA').value;
+
+    // ── Данные Персоны B ──
+    const dB = document.getElementById('dateB').value;
+    const unknownTimeB = document.getElementById('unknownTimeB').checked;
+    const tB = unknownTimeB ? '12:00' : document.getElementById('timeB').value;
+    const latB = parseFloat(document.getElementById('latB').value);
+    const lonB = parseFloat(document.getElementById('lonB').value);
+    const tzB = document.getElementById('tzB').value;
+    const nameB = document.getElementById('nameB').value || 'Партнёр 2';
+    const genderB = document.querySelector('input[name="genderB"]:checked').value;
+    const cityB = document.getElementById('cityB').value;
+
+    if (!dA || !latA || !lonA || !tzA) throw new Error('Заполните все поля Партнёра 1.');
+    if (!dB || !latB || !lonB || !tzB) throw new Error('Заполните все поля Партнёра 2.');
+
+    const [yA, mA, dayA] = dA.split('-').map(Number);
+    const [hA, minA] = tA.split(':').map(Number);
+    const [yB, mB, dayB] = dB.split('-').map(Number);
+    const [hB, minB] = tB.split(':').map(Number);
+
+    const uA = localToUTC(yA, mA, dayA, hA, minA, tzA);
+    const jdA = sweJulday(uA.year, uA.month, uA.day, uA.hour + uA.minute/60 + uA.second/3600);
+    const uB = localToUTC(yB, mB, dayB, hB, minB, tzB);
+    const jdB = sweJulday(uB.year, uB.month, uB.day, uB.hour + uB.minute/60 + uB.second/3600);
+
+    // Флаги
+    const doComposite = document.getElementById('calcComposite').checked;
+    const doProgSyn = document.getElementById('calcProgSynastry').checked;
+    const doProgComp = document.getElementById('calcProgComposite').checked;
+
+    // Натальные карты
+    const chartA = buildFullChart(jdA, latA, lonA, unknownTimeA);
+    const chartB = buildFullChart(jdB, latB, lonB, unknownTimeB);
+
+    const L = [];
+
+    // ══════════ ШАПКА ══════════
+    L.push('══════════ СОВМЕСТИМОСТЬ ══════════');
+    L.push('');
+    const timeNoteA = unknownTimeA ? '(время неизвестно, расчёт на 12:00)' : tA + ' (' + uA.tzAbbr + ')';
+    const timeNoteB = unknownTimeB ? '(время неизвестно, расчёт на 12:00)' : tB + ' (' + uB.tzAbbr + ')';
+    L.push(`${nameA} (${genderA}): ${dA}, ${timeNoteA}, ${cityA || ''} (${latA.toFixed(4)}°, ${lonA.toFixed(4)}°)`);
+    L.push(`${nameB} (${genderB}): ${dB}, ${timeNoteB}, ${cityB || ''} (${latB.toFixed(4)}°, ${lonB.toFixed(4)}°)`);
+
+    // ══════════ 1. НАТАЛЬНАЯ A ══════════
+    L.push(''); L.push('');
+    L.push(`══════════ 1. НАТАЛЬНАЯ КАРТА — ${nameA} ══════════`);
+    L.push('');
+    outputChart(L, chartA, nameA);
+
+    // ══════════ 2. НАТАЛЬНАЯ B ══════════
+    L.push(''); L.push('');
+    L.push(`══════════ 2. НАТАЛЬНАЯ КАРТА — ${nameB} ══════════`);
+    L.push('');
+    outputChart(L, chartB, nameB);
+
+    // ══════════ 3. СИНАСТРИЯ (всегда) ══════════
+    {
+      const synAsp = calcSynastryAspects(chartA.pos, chartB.pos, SYNASTRY_ASPECT_DEFS);
+      L.push(''); L.push('');
+      L.push('══════════ 3. СИНАСТРИЯ (КРОСС-АСПЕКТЫ) ══════════');
+      L.push('');
+      L.push(`${nameA} → ${nameB}`);
+      L.push('');
+
+      // Наложение планет A по домам B (только если оба времени известны)
+      if (!chartA.unknownTime && !chartB.unknownTime && chartA.houses && chartB.houses) {
+        L.push('────────── ПЛАНЕТЫ A В ДОМАХ B ──────────'); L.push('');
+        for (const k of [...PLANET_ORDER, 'vertex', 'pars_fortuna', 'asc', 'mc']) {
+          if (!chartA.pos[k] || isNaN(chartA.pos[k].longitude)) continue;
+          const hInB = houseOf(chartA.pos[k].longitude, chartB.houses.cusps);
+          L.push(`${(PLANET_NAMES[k]||k)} (${nameA}): ${fmtDeg(chartA.pos[k].longitude)} → дом ${hInB} карты ${nameB}`);
+        }
+
+        L.push(''); L.push('────────── ПЛАНЕТЫ B В ДОМАХ A ──────────'); L.push('');
+        for (const k of [...PLANET_ORDER, 'vertex', 'pars_fortuna', 'asc', 'mc']) {
+          if (!chartB.pos[k] || isNaN(chartB.pos[k].longitude)) continue;
+          const hInA = houseOf(chartB.pos[k].longitude, chartA.houses.cusps);
+          L.push(`${(PLANET_NAMES[k]||k)} (${nameB}): ${fmtDeg(chartB.pos[k].longitude)} → дом ${hInA} карты ${nameA}`);
+        }
+        L.push('');
+      } else {
+        if (chartA.unknownTime || chartB.unknownTime) {
+          L.push('(Наложение по домам пропущено — время рождения неизвестно)');
+          L.push('');
+        }
+      }
+
+      L.push(''); L.push('────────── СИНАСТРИЧЕСКИЕ АСПЕКТЫ ──────────'); L.push('');
+      if (!synAsp.length) L.push('Аспектов не обнаружено');
+      else synAsp.forEach(a => {
+        L.push(`${PLANET_NAMES[a.planetA]||a.planetA} (${nameA}) ${a.type} ${PLANET_NAMES[a.planetB]||a.planetB} (${nameB}) — орб ${a.orb}°`);
+      });
+    }
+
+    // ══════════ 4. КОМПОЗИТ ══════════
+    if (doComposite) {
+      const compPos = calcCompositePositions(chartA.pos, chartB.pos);
+      const bothHaveTimes = !unknownTimeA && !unknownTimeB && chartA.houses && chartB.houses;
+      const compHouses = bothHaveTimes ? calcCompositeHouses(chartA.houses, chartB.houses) : null;
+      const compAsp = calcInternalAspects(compPos, NATAL_ASPECT_DEFS);
+
+      L.push(''); L.push('');
+      L.push('══════════ 4. КОМПОЗИТНАЯ КАРТА (СРЕДНИЕ ТОЧКИ) ══════════');
+      L.push('');
+      if (unknownTimeA || unknownTimeB) {
+        L.push('(Время неизвестно — дома, ASC, MC композита не рассчитываются)');
+        L.push('');
+      }
+
+      if (compPos.asc && compPos.mc && bothHaveTimes) {
+        L.push('────────── ОСНОВНЫЕ ТОЧКИ ──────────'); L.push('');
+        L.push('ASC (Асцендент): ' + fmtDeg(compPos.asc.longitude));
+        L.push('MC (Середина неба): ' + fmtDeg(compPos.mc.longitude));
+        L.push('DSC (Десцендент): ' + fmtDeg(norm(compPos.asc.longitude + 180)));
+        L.push('IC (Глубина неба): ' + fmtDeg(norm(compPos.mc.longitude + 180)));
+      }
+
+      L.push(''); L.push('────────── ПЛАНЕТЫ КОМПОЗИТА ──────────'); L.push('');
+      for (const k of [...PLANET_ORDER, 'vertex', 'pars_fortuna']) {
+        if (!compPos[k] || isNaN(compPos[k].longitude)) continue;
+        const hoStr = compHouses ? ', дом ' + houseOf(compPos[k].longitude, compHouses.cusps) : '';
+        L.push(`${PLANET_NAMES[k]||k}: ${fmtDeg(compPos[k].longitude)}${hoStr}`);
+      }
+
+      if (compHouses) {
+        L.push(''); L.push('────────── КУСПИДЫ ДОМОВ КОМПОЗИТА ──────────'); L.push('');
+        compHouses.cusps.forEach((c, i) => L.push('Дом ' + String(i+1).padStart(2) + ': ' + fmtDeg(c)));
+      }
+
+      L.push(''); L.push('────────── АСПЕКТЫ КОМПОЗИТА ──────────'); L.push('');
+      if (!compAsp.length) L.push('Аспектов не обнаружено');
+      else compAsp.forEach(a => {
+        const n1 = PLANET_NAMES[a.planet1]||a.planet1, n2 = PLANET_NAMES[a.planet2]||a.planet2;
+        const ap = a.applying === true ? ' сходящийся' : a.applying === false ? ' расходящийся' : '';
+        L.push(`${n1} ${a.type} ${n2} (орб ${a.orb}°${ap})`);
+      });
+    }
+
+    // ══════════ 5. ПРОГРЕССИВНАЯ СИНАСТРИЯ ══════════
+    if (doProgSyn || doProgComp) {
+      const tDateVal = document.getElementById('targetDate').value;
+      if (!tDateVal) throw new Error('Укажите дату для прогрессий.');
+      const [tY, tM, tD] = tDateVal.split('-').map(Number);
+      const uTarget = localToUTC(tY, tM, tD, 12, 0, tzA);
+      const jdTarget = sweJulday(uTarget.year, uTarget.month, uTarget.day, 12);
+
+      const progJdA = getProgressedJD(jdA, jdTarget);
+      const progJdB = getProgressedJD(jdB, jdTarget);
+      const progPosA = calcPositions(progJdA);
+      const progPosB = calcPositions(progJdB);
+
+      // Добавляем ASC/MC прогрессий
+      const progHousesA = calcAllHouses(progJdA, latA, lonA);
+      const progHousesB = calcAllHouses(progJdB, latB, lonB);
+      progPosA.asc = { longitude: progHousesA.asc, speed: 0 };
+      progPosA.mc = { longitude: progHousesA.mc, speed: 0 };
+      progPosB.asc = { longitude: progHousesB.asc, speed: 0 };
+      progPosB.mc = { longitude: progHousesB.mc, speed: 0 };
+
+      if (doProgSyn) {
+        const progSynAsp = calcSynastryAspects(progPosA, progPosB, PROG_ASPECT_DEFS);
+        L.push(''); L.push('');
+        L.push('══════════ 5. ПРОГРЕССИВНАЯ СИНАСТРИЯ ══════════');
+        L.push('');
+        L.push(`Дата прогрессий: ${tDateVal}`);
+        L.push('');
+
+        L.push('────────── ПРОГРЕССИВНЫЕ ПЛАНЕТЫ A ──────────'); L.push('');
+        for (const k of PLANET_ORDER) {
+          if (!progPosA[k]) continue;
+          const r = progPosA[k].retrograde ? ' (R)' : '';
+          L.push(`${PLANET_NAMES[k]}: ${fmtDeg(progPosA[k].longitude)}${r}`);
+        }
+
+        L.push(''); L.push('────────── ПРОГРЕССИВНЫЕ ПЛАНЕТЫ B ──────────'); L.push('');
+        for (const k of PLANET_ORDER) {
+          if (!progPosB[k]) continue;
+          const r = progPosB[k].retrograde ? ' (R)' : '';
+          L.push(`${PLANET_NAMES[k]}: ${fmtDeg(progPosB[k].longitude)}${r}`);
+        }
+
+        L.push(''); L.push('────────── АСПЕКТЫ (ПРОГР. A → ПРОГР. B, орб ≤1°) ──────────'); L.push('');
+        if (!progSynAsp.length) L.push('Аспектов не обнаружено');
+        else progSynAsp.forEach(a => {
+          L.push(`${PLANET_NAMES[a.planetA]||a.planetA} (ПA) ${a.type} ${PLANET_NAMES[a.planetB]||a.planetB} (ПB) — орб ${a.orb}°`);
+        });
+
+        // Прогрессии A → Натал B
+        const progAnatB = calcSynastryAspects(progPosA, chartB.pos, PROG_ASPECT_DEFS);
+        L.push(''); L.push('────────── АСПЕКТЫ (ПРОГР. A → НАТАЛ B, орб ≤1°) ──────────'); L.push('');
+        if (!progAnatB.length) L.push('Аспектов не обнаружено');
+        else progAnatB.forEach(a => {
+          L.push(`${PLANET_NAMES[a.planetA]||a.planetA} (ПA) ${a.type} ${PLANET_NAMES[a.planetB]||a.planetB} (НB) — орб ${a.orb}°`);
+        });
+
+        // Прогрессии B → Натал A
+        const progBnatA = calcSynastryAspects(progPosB, chartA.pos, PROG_ASPECT_DEFS);
+        L.push(''); L.push('────────── АСПЕКТЫ (ПРОГР. B → НАТАЛ A, орб ≤1°) ──────────'); L.push('');
+        if (!progBnatA.length) L.push('Аспектов не обнаружено');
+        else progBnatA.forEach(a => {
+          L.push(`${PLANET_NAMES[a.planetA]||a.planetA} (ПB) ${a.type} ${PLANET_NAMES[a.planetB]||a.planetB} (НA) — орб ${a.orb}°`);
+        });
+      }
+
+      if (doProgComp) {
+        const progCompPos = calcCompositePositions(progPosA, progPosB);
+        const progCompAsp = calcInternalAspects(progCompPos, PROG_ASPECT_DEFS);
+
+        L.push(''); L.push('');
+        L.push('══════════ 6. ПРОГРЕССИВНЫЙ КОМПОЗИТ ══════════');
+        L.push('');
+        L.push(`Дата прогрессий: ${tDateVal}`);
+        L.push('');
+
+        L.push('────────── ПЛАНЕТЫ ПРОГРЕССИВНОГО КОМПОЗИТА ──────────'); L.push('');
+        for (const k of [...PLANET_ORDER, 'asc', 'mc']) {
+          if (!progCompPos[k] || isNaN(progCompPos[k].longitude)) continue;
+          L.push(`${PLANET_NAMES[k]||k}: ${fmtDeg(progCompPos[k].longitude)}`);
+        }
+
+        L.push(''); L.push('────────── АСПЕКТЫ ПРОГРЕССИВНОГО КОМПОЗИТА (орб ≤1°) ──────────'); L.push('');
+        if (!progCompAsp.length) L.push('Аспектов не обнаружено');
+        else progCompAsp.forEach(a => {
+          const n1 = PLANET_NAMES[a.planet1]||a.planet1, n2 = PLANET_NAMES[a.planet2]||a.planet2;
+          L.push(`${n1} ${a.type} ${n2} (орб ${a.orb}°)`);
+        });
+      }
+    }
+
+    L.push(''); L.push('══════════════════════════════════════');
+
+    document.getElementById('output').value = L.join('\n');
+    document.getElementById('resultBlock').style.display = 'block';
+
+  } catch(e) {
+    console.error(e);
+    errEl.textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'РАССЧИТАТЬ СОВМЕСТИМОСТЬ';
+  }
+};
+
+// ═══ Вспомогательная: вывод натальной карты ═══
+
+function outputChart(L, chart, name) {
+  const { pos, houses, unknownTime } = chart;
+
+  if (unknownTime) {
+    L.push('(Время рождения неизвестно — дома, ASC, MC не рассчитываются)');
+    L.push('');
+  }
+
+  if (!unknownTime && houses) {
+    L.push('────────── ОСНОВНЫЕ ТОЧКИ ──────────'); L.push('');
+    L.push('ASC (Асцендент): ' + fmtDeg(houses.asc));
+    L.push('MC (Середина неба): ' + fmtDeg(houses.mc));
+    L.push('DSC (Десцендент): ' + fmtDeg(norm(houses.asc + 180)));
+    L.push('IC (Глубина неба): ' + fmtDeg(norm(houses.mc + 180)));
+    L.push('');
+  }
+
+  L.push('────────── ПЛАНЕТЫ ──────────'); L.push('');
+  for (const k of PLANET_ORDER) {
+    const p = pos[k]; if (!p) continue;
+    const i = degToSign(p.longitude), r = p.retrograde ? ' (R)' : '';
+    const hoStr = (!unknownTime && houses) ? ', дом ' + houseOf(p.longitude, houses.cusps) : '';
+    L.push(`${PLANET_NAMES[k]}: ${i.degree}\u00B0${String(i.minute).padStart(2,'0')}'${String(i.second).padStart(2,'0')}" ${i.sign}${hoStr}${r}`);
+  }
+
+  if (!unknownTime && houses) {
+    L.push(''); L.push('────────── КУСПИДЫ ДОМОВ ──────────'); L.push('');
+    houses.cusps.forEach((c, i) => L.push('Дом ' + String(i+1).padStart(2) + ': ' + fmtDeg(c)));
+  }
+
+  const asp = calcInternalAspects(pos, NATAL_ASPECT_DEFS);
+  L.push(''); L.push('────────── АСПЕКТЫ ──────────'); L.push('');
+  if (!asp.length) L.push('Аспекты не обнаружены');
+  else asp.forEach(a => {
+    const n1 = PLANET_NAMES[a.planet1]||a.planet1, n2 = PLANET_NAMES[a.planet2]||a.planet2;
+    const ap = a.applying === true ? ' сходящийся' : a.applying === false ? ' расходящийся' : '';
+    L.push(`${n1} ${a.type} ${n2} (орб ${a.orb}°${ap})`);
+  });
+}
+
+// ═══ Копирование ═══
+
+window.copyText = function() {
+  const ta = document.getElementById('output');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Скопировано'; btn.className = 'copy-btn copied';
+    setTimeout(() => { btn.textContent = '⎘ Копировать'; btn.className = 'copy-btn'; }, 2500);
+  });
+};
+
+// ═══ Автокомплит городов ═══
+
+function setupCitySearch(inputId, latId, lonId, tzId) {
+  const input = document.getElementById(inputId);
+  let tid;
+  input.addEventListener('input', function() {
+    clearTimeout(tid); closeAllLists();
+    const val = this.value; if (!val || val.length < 2) return;
+    tid = setTimeout(async () => {
+      try {
+        const resp = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=5&language=ru&format=json`);
+        const data = await resp.json(); if (!data.results) return;
+        const list = document.createElement('DIV'); list.className = 'autocomplete-items';
+        input.parentNode.appendChild(list);
+        data.results.forEach(city => {
+          const item = document.createElement('DIV');
+          const region = city.admin1 ? `, ${city.admin1}` : '';
+          const country = city.country ? ` (${city.country})` : '';
+          const tz = city.timezone || 'UTC';
+          item.innerHTML = `<span class="city-name">${city.name}</span><span class="city-region">${region}${country}</span><span class="city-tz">${tz}</span>`;
+          item.addEventListener('click', () => {
+            input.value = city.name;
+            document.getElementById(latId).value = city.latitude;
+            document.getElementById(lonId).value = city.longitude;
+            if (tzId) document.getElementById(tzId).value = tz;
+            closeAllLists();
+          });
+          list.appendChild(item);
+        });
+      } catch(e) { console.error(e); }
+    }, 400);
+  });
+}
+
+function closeAllLists() { document.querySelectorAll('.autocomplete-items').forEach(el => el.remove()); }
+document.addEventListener('click', closeAllLists);
+
+setupCitySearch('cityA', 'latA', 'lonA', 'tzA');
+setupCitySearch('cityB', 'latB', 'lonB', 'tzB');
+
+initSWE();
+</script>
+</body>
+</html>
