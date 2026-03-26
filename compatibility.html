@@ -175,8 +175,20 @@
       </div>
     </div>
     <div class="full" id="targetDateBlock">
-      <label>Дата для прогрессий</label>
-      <input type="date" id="targetDate">
+      <div class="row">
+        <div>
+          <label>Дата для прогрессий</label>
+          <input type="date" id="targetDate">
+        </div>
+        <div>
+          <label>Город (часовой пояс)</label>
+          <div class="autocomplete"><input id="cityProg" placeholder="Начните вводить..." autocomplete="off"></div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label>Часовой пояс прогрессий (IANA)</label>
+        <input id="tzProg" placeholder="Europe/Moscow">
+      </div>
     </div>
 
   </div>
@@ -668,8 +680,10 @@ window.calcCompat = function() {
     if (doProgSyn || doProgComp) {
       const tDateVal = document.getElementById('targetDate').value;
       if (!tDateVal) throw new Error('Укажите дату для прогрессий.');
+      const tzProg = document.getElementById('tzProg').value || tzA;
+      if (!tzProg) throw new Error('Укажите часовой пояс для даты прогрессий.');
       const [tY, tM, tD] = tDateVal.split('-').map(Number);
-      const uTarget = localToUTC(tY, tM, tD, 12, 0, tzA);
+      const uTarget = localToUTC(tY, tM, tD, 12, 0, tzProg);
       const jdTarget = sweJulday(uTarget.year, uTarget.month, uTarget.day, 12);
 
       const progJdA = getProgressedJD(jdA, jdTarget);
@@ -844,8 +858,8 @@ function setupCitySearch(inputId, latId, lonId, tzId) {
           item.innerHTML = `<span class="city-name">${city.name}</span><span class="city-region">${region}${country}</span><span class="city-tz">${tz}</span>`;
           item.addEventListener('click', () => {
             input.value = city.name;
-            document.getElementById(latId).value = city.latitude;
-            document.getElementById(lonId).value = city.longitude;
+            if (latId) document.getElementById(latId).value = city.latitude;
+            if (lonId) document.getElementById(lonId).value = city.longitude;
             if (tzId) document.getElementById(tzId).value = tz;
             closeAllLists();
           });
@@ -861,6 +875,7 @@ document.addEventListener('click', closeAllLists);
 
 setupCitySearch('cityA', 'latA', 'lonA', 'tzA');
 setupCitySearch('cityB', 'latB', 'lonB', 'tzB');
+setupCitySearch('cityProg', null, null, 'tzProg');
 
 initSWE();
 </script>
