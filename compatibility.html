@@ -336,17 +336,54 @@ function sweHouses(jd, lat, lon) {
 
 function calcSelena(jd) { return norm(242.606 + 0.14084795 * (jd - 2451545.0)); }
 
+// Расчёт деклинации из эклиптических координат
+function calcDeclination(longitude, latitude) {
+  const eps = 23.4393; // наклон эклиптики (приближённо)
+  const lonRad = toRad(longitude);
+  const latRad = toRad(latitude || 0);
+  const epsRad = toRad(eps);
+  const decl = toDeg(Math.asin(
+    Math.sin(latRad) * Math.cos(epsRad) +
+    Math.cos(latRad) * Math.sin(epsRad) * Math.sin(lonRad)
+  ));
+  return decl;
+}
+
+// Расчёт аспектов деклинации (параллели и контрапараллели)
+function calcDeclinationAspects(posA, posB, orbLimit) {
+  const asp = [];
+  const keysA = [...PLANET_ORDER, 'vertex', 'pars_fortuna', 'asc', 'mc'];
+  const keysB = [...PLANET_ORDER, 'vertex', 'pars_fortuna', 'asc', 'mc'];
+  for (const k1 of keysA) {
+    if (!posA[k1] || isNaN(posA[k1].longitude)) continue;
+    const declA = calcDeclination(posA[k1].longitude, posA[k1].latitude || 0);
+    for (const k2 of keysB) {
+      if (!posB[k2] || isNaN(posB[k2].longitude)) continue;
+      const declB = calcDeclination(posB[k2].longitude, posB[k2].latitude || 0);
+      const parOrb = Math.abs(declA - declB);
+      const cparOrb = Math.abs(declA + declB);
+      if (parOrb <= orbLimit) {
+        asp.push({ planetA: k1, planetB: k2, type: 'Параллель', orb: parOrb.toFixed(2), orbNum: parOrb, declA: declA.toFixed(2), declB: declB.toFixed(2) });
+      }
+      if (cparOrb <= orbLimit) {
+        asp.push({ planetA: k1, planetB: k2, type: 'Контрапараллель', orb: cparOrb.toFixed(2), orbNum: cparOrb, declA: declA.toFixed(2), declB: declB.toFixed(2) });
+      }
+    }
+  }
+  return asp.sort((a, b) => a.orbNum - b.orbNum);
+}
+
 function calcPositions(jd) {
   const pos = {};
   for (const [name, bodyCode] of Object.entries(SE_BODIES)) {
     const data = sweCalcUt(jd, bodyCode);
-    pos[name] = { longitude: norm(data[0]), speed: data[3] || 0, retrograde: (data[3] || 0) < 0 };
+    pos[name] = { longitude: norm(data[0]), latitude: data[1] || 0, speed: data[3] || 0, retrograde: (data[3] || 0) < 0 };
   }
   if (pos.north_node) {
     pos.north_node.retrograde = true;
-    pos.south_node = { longitude: norm(pos.north_node.longitude + 180), retrograde: true, speed: -(pos.north_node.speed || 0) };
+    pos.south_node = { longitude: norm(pos.north_node.longitude + 180), latitude: -(pos.north_node.latitude || 0), retrograde: true, speed: -(pos.north_node.speed || 0) };
   }
-  pos.selena = { longitude: calcSelena(jd), retrograde: false, speed: 0.111 };
+  pos.selena = { longitude: calcSelena(jd), latitude: 0, retrograde: false, speed: 0.111 };
   return pos;
 }
 
@@ -432,7 +469,7 @@ function calcSynastryAspects(posA, posB, aspectDefs) {
 
 function calcInternalAspects(pos, aspectDefs) {
   const asp = [], keys = Object.keys(pos);
-  const skipPairs = new Set(['asc|mc', 'asc|vertex', 'mc|vertex']);
+  const skipPairs = new Set(['asc|mc', 'asc|vertex', 'mc|vertex', 'north_node|south_node']);
   const fic = ['north_node','south_node','lilith','selena','vertex','pars_fortuna'];
   for (let i = 0; i < keys.length; i++) for (let j = i+1; j < keys.length; j++) {
     const k1 = keys[i], k2 = keys[j];
@@ -496,6 +533,43 @@ function calcCompositeHouses(housesA, housesB) {
 function getProgressedJD(birthJD, targetJD) {
   const ageInDays = targetJD - birthJD;
   return birthJD + ageInDays / 365.242199;
+}
+
+// ═══ Нумерология ═══
+
+function reduceToSingle(n) {
+  while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
+    n = String(n).split('').reduce((s, d) => s + parseInt(d), 0);
+  }
+  return n;
+}
+
+function calcLifePath(dateStr) {
+  const digits = dateStr.replace(/\D/g, '');
+  const sum = digits.split('').reduce((s, d) => s + parseInt(d), 0);
+  return reduceToSingle(sum);
+}
+
+function calcBirthdayNumber(dateStr) {
+  const day = parseInt(dateStr.split('-')[2]);
+  return reduceToSingle(day);
+}
+
+function letterToNumber(ch) {
+  const upper = ch.toUpperCase();
+  const ru = 'АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+  const idx = ru.indexOf(upper);
+  if (idx !== -1) return idx + 1;
+  const en = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const eidx = en.indexOf(upper);
+  if (eidx !== -1) return eidx + 1;
+  return 0;
+}
+
+function calcNameNumber(name) {
+  if (!name || !name.trim()) return 0;
+  const sum = name.trim().split('').reduce((s, ch) => s + letterToNumber(ch), 0);
+  return reduceToSingle(sum);
 }
 
 // ═══ Инициализация SWE ═══
@@ -581,23 +655,14 @@ window.calcCompat = function() {
     L.push(`${nameA} (${genderA}): ${dA}, ${timeNoteA}, ${cityA || ''} (${latA.toFixed(4)}°, ${lonA.toFixed(4)}°)`);
     L.push(`${nameB} (${genderB}): ${dB}, ${timeNoteB}, ${cityB || ''} (${latB.toFixed(4)}°, ${lonB.toFixed(4)}°)`);
 
-    // ══════════ 1. НАТАЛЬНАЯ A ══════════
-    L.push(''); L.push('');
-    L.push(`══════════ 1. НАТАЛЬНАЯ КАРТА — ${nameA} ══════════`);
-    L.push('');
-    outputChart(L, chartA, nameA);
+    let sectionNum = 0;
 
-    // ══════════ 2. НАТАЛЬНАЯ B ══════════
-    L.push(''); L.push('');
-    L.push(`══════════ 2. НАТАЛЬНАЯ КАРТА — ${nameB} ══════════`);
-    L.push('');
-    outputChart(L, chartB, nameB);
-
-    // ══════════ 3. СИНАСТРИЯ (всегда) ══════════
+    // ══════════ 1. СИНАСТРИЯ (всегда) ══════════
     {
+      sectionNum++;
       const synAsp = calcSynastryAspects(chartA.pos, chartB.pos, SYNASTRY_ASPECT_DEFS);
       L.push(''); L.push('');
-      L.push('══════════ 3. СИНАСТРИЯ (КРОСС-АСПЕКТЫ) ══════════');
+      L.push(`══════════ ${sectionNum}. СИНАСТРИЯ (КРОСС-АСПЕКТЫ) ══════════`);
       L.push('');
       L.push(`${nameA} → ${nameB}`);
       L.push('');
@@ -630,17 +695,27 @@ window.calcCompat = function() {
       else synAsp.forEach(a => {
         L.push(`${PLANET_NAMES[a.planetA]||a.planetA} (${nameA}) ${a.type} ${PLANET_NAMES[a.planetB]||a.planetB} (${nameB}) — орб ${a.orb}°`);
       });
+
+      // ── Аспекты деклинации ──
+      const declAsp = calcDeclinationAspects(chartA.pos, chartB.pos, 1.2);
+      if (declAsp.length) {
+        L.push(''); L.push('────────── АСПЕКТЫ ДЕКЛИНАЦИИ (ПАРАЛЛЕЛИ И КОНТРАПАРАЛЛЕЛИ, орб ≤1°12\') ──────────'); L.push('');
+        declAsp.forEach(a => {
+          L.push(`${PLANET_NAMES[a.planetA]||a.planetA} (${nameA}, ${a.declA}°) ${a.type} ${PLANET_NAMES[a.planetB]||a.planetB} (${nameB}, ${a.declB}°) — орб ${a.orb}°`);
+        });
+      }
     }
 
-    // ══════════ 4. КОМПОЗИТ ══════════
+    // ══════════ 2. КОМПОЗИТ ══════════
     if (doComposite) {
+      sectionNum++;
       const compPos = calcCompositePositions(chartA.pos, chartB.pos);
       const bothHaveTimes = !unknownTimeA && !unknownTimeB && chartA.houses && chartB.houses;
       const compHouses = bothHaveTimes ? calcCompositeHouses(chartA.houses, chartB.houses) : null;
       const compAsp = calcInternalAspects(compPos, NATAL_ASPECT_DEFS);
 
       L.push(''); L.push('');
-      L.push('══════════ 4. КОМПОЗИТНАЯ КАРТА (СРЕДНИЕ ТОЧКИ) ══════════');
+      L.push(`══════════ ${sectionNum}. КОМПОЗИТНАЯ КАРТА (СРЕДНИЕ ТОЧКИ) ══════════`);
       L.push('');
       if (unknownTimeA || unknownTimeB) {
         L.push('(Время неизвестно — дома, ASC, MC композита не рассчитываются)');
@@ -676,7 +751,7 @@ window.calcCompat = function() {
       });
     }
 
-    // ══════════ 5. ПРОГРЕССИВНАЯ СИНАСТРИЯ ══════════
+    // ══════════ ПРОГРЕССИИ ══════════
     if (doProgSyn || doProgComp) {
       const tDateVal = document.getElementById('targetDate').value;
       if (!tDateVal) throw new Error('Укажите дату для прогрессий.');
@@ -700,9 +775,10 @@ window.calcCompat = function() {
       progPosB.mc = { longitude: progHousesB.mc, speed: 0 };
 
       if (doProgSyn) {
+        sectionNum++;
         const progSynAsp = calcSynastryAspects(progPosA, progPosB, PROG_ASPECT_DEFS);
         L.push(''); L.push('');
-        L.push('══════════ 5. ПРОГРЕССИВНАЯ СИНАСТРИЯ ══════════');
+        L.push(`══════════ ${sectionNum}. ПРОГРЕССИВНАЯ СИНАСТРИЯ ══════════`);
         L.push('');
         L.push(`Дата прогрессий: ${tDateVal}`);
         L.push('');
@@ -745,19 +821,43 @@ window.calcCompat = function() {
       }
 
       if (doProgComp) {
+        sectionNum++;
         const progCompPos = calcCompositePositions(progPosA, progPosB);
+
+        // Расчёт домов прогрессивного композита (средние точки прогрессивных домов)
+        const progCompHouses = (!unknownTimeA && !unknownTimeB) ? calcCompositeHouses(progHousesA, progHousesB) : null;
+        if (progCompHouses) {
+          progCompPos.asc = { longitude: progCompHouses.asc, speed: 0 };
+          progCompPos.mc = { longitude: progCompHouses.mc, speed: 0 };
+        }
+
         const progCompAsp = calcInternalAspects(progCompPos, PROG_ASPECT_DEFS);
 
         L.push(''); L.push('');
-        L.push('══════════ 6. ПРОГРЕССИВНЫЙ КОМПОЗИТ ══════════');
+        L.push(`══════════ ${sectionNum}. ПРОГРЕССИВНЫЙ КОМПОЗИТ ══════════`);
         L.push('');
         L.push(`Дата прогрессий: ${tDateVal}`);
         L.push('');
 
+        if (progCompHouses) {
+          L.push('────────── ОСНОВНЫЕ ТОЧКИ ──────────'); L.push('');
+          L.push('ASC (Асцендент): ' + fmtDeg(progCompHouses.asc));
+          L.push('MC (Середина неба): ' + fmtDeg(progCompHouses.mc));
+          L.push('DSC (Десцендент): ' + fmtDeg(norm(progCompHouses.asc + 180)));
+          L.push('IC (Глубина неба): ' + fmtDeg(norm(progCompHouses.mc + 180)));
+          L.push('');
+        }
+
         L.push('────────── ПЛАНЕТЫ ПРОГРЕССИВНОГО КОМПОЗИТА ──────────'); L.push('');
         for (const k of [...PLANET_ORDER, 'asc', 'mc']) {
           if (!progCompPos[k] || isNaN(progCompPos[k].longitude)) continue;
-          L.push(`${PLANET_NAMES[k]||k}: ${fmtDeg(progCompPos[k].longitude)}`);
+          const hoStr = progCompHouses ? ', дом ' + houseOf(progCompPos[k].longitude, progCompHouses.cusps) : '';
+          L.push(`${PLANET_NAMES[k]||k}: ${fmtDeg(progCompPos[k].longitude)}${hoStr}`);
+        }
+
+        if (progCompHouses) {
+          L.push(''); L.push('────────── КУСПИДЫ ДОМОВ ПРОГРЕССИВНОГО КОМПОЗИТА ──────────'); L.push('');
+          progCompHouses.cusps.forEach((c, i) => L.push('Дом ' + String(i+1).padStart(2) + ': ' + fmtDeg(c)));
         }
 
         L.push(''); L.push('────────── АСПЕКТЫ ПРОГРЕССИВНОГО КОМПОЗИТА (орб ≤1°) ──────────'); L.push('');
@@ -767,6 +867,29 @@ window.calcCompat = function() {
           L.push(`${n1} ${a.type} ${n2} (орб ${a.orb}°)`);
         });
       }
+    }
+
+    // ══════════ НУМЕРОЛОГИЯ ══════════
+    {
+      sectionNum++;
+      const lpA = calcLifePath(dA), bdA = calcBirthdayNumber(dA);
+      const lpB = calcLifePath(dB), bdB = calcBirthdayNumber(dB);
+      const nnA = calcNameNumber(nameA), nnB = calcNameNumber(nameB);
+
+      L.push(''); L.push('');
+      L.push(`══════════ ${sectionNum}. НУМЕРОЛОГИЯ ══════════`);
+      L.push('');
+      L.push(`${nameA}:`);
+      L.push(`  Число жизненного пути: ${lpA}`);
+      L.push(`  Число дня рождения: ${bdA}`);
+      if (nnA) L.push(`  Число имени: ${nnA}`);
+      L.push('');
+      L.push(`${nameB}:`);
+      L.push(`  Число жизненного пути: ${lpB}`);
+      L.push(`  Число дня рождения: ${bdB}`);
+      if (nnB) L.push(`  Число имени: ${nnB}`);
+      L.push('');
+      L.push('Совместимость чисел жизненного пути: ' + lpA + ' + ' + lpB + ' = ' + reduceToSingle(lpA + lpB));
     }
 
     L.push(''); L.push('══════════════════════════════════════');
