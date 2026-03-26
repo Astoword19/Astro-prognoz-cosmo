@@ -80,6 +80,7 @@
     <a href="solar.html" class="nav-btn">Соляр</a>
     <a href="relocation.html" class="nav-btn">Релокация</a>
     <a href="combo.html" class="nav-btn">Комбо</a>
+    <a href="compatibility.html" class="nav-btn">Совместимость</a>
   </div>
 </div></div></div>
 
@@ -115,7 +116,7 @@
     </div>
 
     <div class="full"><div class="section-title">Параметры Лунара</div></div>
-    <div><label>Дата Лунара</label><input type="date" id="lunarDate" value="2026-03-26"></div>
+    <div><label>Дата (найти действующий лунар)</label><input type="date" id="lunarDate" value="2026-03-26"></div>
     <div>
       <label>Город встречи Лунара</label>
       <div class="autocomplete">
@@ -304,6 +305,41 @@ function findLunarReturnJD(jdBirth, targetYear, targetMonth, targetDay) {
   return jdEstimate;
 }
 
+// ─── Найти ТЕКУЩИЙ лунар (действующий на дату) и СЛЕДУЮЩИЙ ──
+function findCurrentAndNextLunar(jdBirth, targetYear, targetMonth, targetDay) {
+  const jdTarget = sweJulday(targetYear, targetMonth, targetDay, 12.0);
+
+  // Находим ближайший лунар к дате
+  const jdNearest = findLunarReturnJD(jdBirth, targetYear, targetMonth, targetDay);
+
+  let jdCurrent, jdNext;
+
+  if (jdNearest > jdTarget) {
+    // Ближайший оказался ПОСЛЕ даты — он «следующий», ищем предыдущий
+    jdNext = jdNearest;
+    const prevRev = sweRevjul(jdNearest - 26);
+    jdCurrent = findLunarReturnJD(jdBirth, prevRev.year, prevRev.month, prevRev.day);
+    // Проверка: если current тоже после target, сдвигаемся ещё назад
+    if (jdCurrent > jdTarget) {
+      const prevRev2 = sweRevjul(jdCurrent - 26);
+      jdCurrent = findLunarReturnJD(jdBirth, prevRev2.year, prevRev2.month, prevRev2.day);
+    }
+  } else {
+    // Ближайший ДО или НА дату — он «текущий», ищем следующий
+    jdCurrent = jdNearest;
+    const nextRev = sweRevjul(jdNearest + 29);
+    jdNext = findLunarReturnJD(jdBirth, nextRev.year, nextRev.month, nextRev.day);
+    // Проверка: если next до target, сдвигаемся ещё вперёд
+    if (jdNext <= jdTarget) {
+      jdCurrent = jdNext;
+      const nextRev2 = sweRevjul(jdNext + 29);
+      jdNext = findLunarReturnJD(jdBirth, nextRev2.year, nextRev2.month, nextRev2.day);
+    }
+  }
+
+  return { jdCurrent, jdNext };
+}
+
 // ─── Расчёт позиций ─────────────────────────────────────
 function calcPositions(jd) {
   const pos = {};
@@ -438,22 +474,29 @@ window.calculateLunar = function() {
     const natalMoonData = sweCalcUt(jdBirth, SE_MOON);
     const natalMoonLon = norm(natalMoonData[0]);
 
-    // 2. Найти точный JD Лунара
-    const jdLunar = findLunarReturnJD(jdBirth, tYear, tMonth, tDay);
+    // 2. Найти ТЕКУЩИЙ лунар (действующий на дату) и СЛЕДУЮЩИЙ
+    const { jdCurrent, jdNext } = findCurrentAndNextLunar(jdBirth, tYear, tMonth, tDay);
+    const jdLunar = jdCurrent;
 
     // 3. Дата/время Лунара по UTC
-    const revjul = sweRevjul(jdLunar);
-    let lunarDateUTC, lunarLocal;
-    if (revjul && revjul.year !== undefined) {
-      const h = Math.floor(revjul.hour);
-      const m = Math.floor((revjul.hour - h) * 60);
-      const s = Math.floor(((revjul.hour - h) * 60 - m) * 60);
-      lunarDateUTC = moment.utc(`${revjul.year}-${String(revjul.month).padStart(2,'0')}-${String(revjul.day).padStart(2,'0')} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`, 'YYYY-MM-DD HH:mm:ss');
-    } else {
-      const daysSinceEpoch = jdLunar - 2440587.5;
-      lunarDateUTC = moment.utc(daysSinceEpoch * 86400000);
+    function jdToMoment(jd, tz) {
+      const rv = sweRevjul(jd);
+      let utcM;
+      if (rv && rv.year !== undefined) {
+        const h = Math.floor(rv.hour);
+        const m = Math.floor((rv.hour - h) * 60);
+        const s = Math.floor(((rv.hour - h) * 60 - m) * 60);
+        utcM = moment.utc(`${rv.year}-${String(rv.month).padStart(2,'0')}-${String(rv.day).padStart(2,'0')} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`, 'YYYY-MM-DD HH:mm:ss');
+      } else {
+        utcM = moment.utc((jd - 2440587.5) * 86400000);
+      }
+      return { utc: utcM, local: utcM.clone().tz(tz) };
     }
-    lunarLocal = lunarDateUTC.clone().tz(sTz);
+
+    const lunarStart = jdToMoment(jdCurrent, sTz);
+    const lunarEnd = jdToMoment(jdNext, sTz);
+    const lunarDateUTC = lunarStart.utc;
+    const lunarLocal = lunarStart.local;
 
     // 4. Расчёт карты Лунара
     const pos = calcPositions(jdLunar);
@@ -548,7 +591,8 @@ window.calculateLunar = function() {
     L.push('Время рождения: ' + bTime + ' (' + uBirth.tzAbbr + ')');
     L.push('Натальная Луна: ' + fmtDeg(natalMoonLon));
     L.push('');
-    L.push('Дата Лунара (ближайший к): ' + lDate);
+    L.push('Расчёт на дату: ' + lDate);
+    L.push('Действующий лунар: ' + lunarLocal.format('DD.MM.YYYY HH:mm:ss') + ' — ' + lunarEnd.local.format('DD.MM.YYYY HH:mm:ss') + ' (UTC' + tzStr + ')');
     L.push('Точное время Лунара: ' + lunarLocal.format('DD.MM.YYYY HH:mm:ss') + ' (UTC' + tzStr + ')');
     L.push('Время UTC: ' + lunarDateUTC.format('DD.MM.YYYY HH:mm:ss'));
     L.push('Место встречи: ' + sCity + ' (' + sLat.toFixed(4) + '°, ' + sLon.toFixed(4) + '°)');
@@ -717,6 +761,9 @@ document.addEventListener('click', closeAllLists);
 
 setupCitySearch('birthCity', 'birthLat', 'birthLon', 'birthTz');
 setupCitySearch('lunarCity', 'lunarLat', 'lunarLon', 'lunarTz');
+
+// Автоматически ставим сегодняшнюю дату
+document.getElementById('lunarDate').value = new Date().toISOString().slice(0, 10);
 
 initSWE();
 </script>

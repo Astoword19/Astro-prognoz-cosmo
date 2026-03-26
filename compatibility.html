@@ -61,12 +61,10 @@
   .city-name { font-weight: 500; font-size: 14px; color: #fff; }
   .city-region { font-size: 12px; color: #64748b; margin-left: 6px; }
   .city-tz { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #475569; margin-top: 4px; }
-  .check-row { display: flex; gap: 10px; align-items: center; cursor: pointer; font-size: 13px; color: #e2e8f0; margin-bottom: 8px; }
-  .check-row input[type="checkbox"] { accent-color: #cba77b; width: 16px; height: 16px; cursor: pointer; }
   .toggle-row { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; padding: 12px 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; transition: all 0.2s; }
   .toggle-row:hover { border-color: rgba(255,255,255,0.15); }
   .toggle-row.active { border-color: #cba77b; }
-  .toggle-check { width: 18px; height: 18px; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.2s; flex-shrink: 0; }
+  .toggle-check { width: 18px; height: 18px; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; transition: all 0.2s; flex-shrink: 0; color: transparent; }
   .toggle-row.active .toggle-check { border-color: #cba77b; background: #cba77b; color: #0d0e12; }
   .toggle-text { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', monospace; }
   .toggle-row.active .toggle-text { color: #cba77b; }
@@ -100,7 +98,7 @@
       <label>&nbsp;</label>
       <input type="checkbox" id="unknownTimeA" style="display:none;">
       <div class="toggle-row" id="unknownTimeToggleA" onclick="document.getElementById('unknownTimeA').checked=!document.getElementById('unknownTimeA').checked; this.classList.toggle('active'); document.getElementById('timeFieldA').style.opacity=this.classList.contains('active')?'0.3':'1'; document.getElementById('timeFieldA').style.pointerEvents=this.classList.contains('active')?'none':'auto';">
-        <span class="toggle-check"></span>
+        <span class="toggle-check">✓</span>
         <span class="toggle-text">Время неизвестно</span>
       </div>
     </div>
@@ -132,7 +130,7 @@
       <label>&nbsp;</label>
       <input type="checkbox" id="unknownTimeB" style="display:none;">
       <div class="toggle-row" id="unknownTimeToggleB" onclick="document.getElementById('unknownTimeB').checked=!document.getElementById('unknownTimeB').checked; this.classList.toggle('active'); document.getElementById('timeFieldB').style.opacity=this.classList.contains('active')?'0.3':'1'; document.getElementById('timeFieldB').style.pointerEvents=this.classList.contains('active')?'none':'auto';">
-        <span class="toggle-check"></span>
+        <span class="toggle-check">✓</span>
         <span class="toggle-text">Время неизвестно</span>
       </div>
     </div>
@@ -158,11 +156,23 @@
     <!-- ── Настройки ── -->
     <div class="full"><div class="section-title">Дополнительные методы</div></div>
     <div>
-      <label class="check-row"><input type="checkbox" id="calcComposite"> Композит (средние точки)</label>
-      <label class="check-row"><input type="checkbox" id="calcProgSynastry"> Прогрессивная синастрия</label>
+      <input type="checkbox" id="calcComposite" style="display:none;">
+      <div class="toggle-row" style="margin-bottom:8px;" onclick="document.getElementById('calcComposite').checked=!document.getElementById('calcComposite').checked; this.classList.toggle('active');">
+        <span class="toggle-check">✓</span>
+        <span class="toggle-text">Композит (средние точки)</span>
+      </div>
+      <input type="checkbox" id="calcProgSynastry" style="display:none;">
+      <div class="toggle-row" style="margin-bottom:8px;" onclick="document.getElementById('calcProgSynastry').checked=!document.getElementById('calcProgSynastry').checked; this.classList.toggle('active');">
+        <span class="toggle-check">✓</span>
+        <span class="toggle-text">Прогрессивная синастрия</span>
+      </div>
     </div>
     <div>
-      <label class="check-row"><input type="checkbox" id="calcProgComposite"> Прогрессивный композит</label>
+      <input type="checkbox" id="calcProgComposite" style="display:none;">
+      <div class="toggle-row" onclick="document.getElementById('calcProgComposite').checked=!document.getElementById('calcProgComposite').checked; this.classList.toggle('active');">
+        <span class="toggle-check">✓</span>
+        <span class="toggle-text">Прогрессивный композит</span>
+      </div>
     </div>
     <div class="full" id="targetDateBlock">
       <label>Дата для прогрессий</label>
