@@ -510,39 +510,78 @@ function calcCrossAspects(movingPos, natalPos, aspectDefs) {
 
 // ═══ Нумерология ═══
 
-function reduceToSingle(n) {
-  while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
-    n = String(n).split('').reduce((s, d) => s + parseInt(d), 0);
+const RU_NUM = {
+  'А':1,'Б':2,'В':3,'Г':4,'Д':5,'Е':6,'Ё':7,'Ж':8,'З':9,
+  'И':1,'Й':2,'К':3,'Л':4,'М':5,'Н':6,'О':7,'П':8,'Р':9,
+  'С':1,'Т':2,'У':3,'Ф':4,'Х':5,'Ц':6,'Ч':7,'Ш':8,'Щ':9,
+  'Ъ':1,'Ы':2,'Ь':3,'Э':4,'Ю':5,'Я':6
+};
+const RU_VOWELS = ['А','Е','Ё','И','О','У','Ы','Э','Ю','Я'];
+
+function reduceNum(n) {
+  if (!n) return 0;
+  let sum = n;
+  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+    sum = String(sum).split('').reduce((a, v) => a + Number(v), 0);
   }
-  return n;
+  return sum;
 }
 
-function calcLifePath(dateStr) {
-  const digits = dateStr.replace(/\D/g, '');
-  const sum = digits.split('').reduce((s, d) => s + parseInt(d), 0);
-  return reduceToSingle(sum);
-}
+function calcNumerology(dateStr, fullName, eventDateStr) {
+  const parts = dateStr.split('-').map(Number);
+  const birthDay = parts[2] || 1;
+  const birthMonth = parts[1] || 1;
+  const birthYear = parts[0] || 2000;
 
-function calcBirthdayNumber(dateStr) {
-  const day = parseInt(dateStr.split('-')[2]);
-  return reduceToSingle(day);
-}
+  const dayNum = reduceNum(birthDay);
+  const monthNum = reduceNum(birthMonth);
+  const yearNum = reduceNum(String(birthYear).split('').reduce((a, v) => a + Number(v), 0));
+  const lifePathNumber = reduceNum(dayNum + monthNum + yearNum);
 
-function letterToNumber(ch) {
-  const upper = ch.toUpperCase();
-  const ru = 'АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
-  const idx = ru.indexOf(upper);
-  if (idx !== -1) return idx + 1;
-  const en = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const eidx = en.indexOf(upper);
-  if (eidx !== -1) return eidx + 1;
-  return 0;
-}
+  const nameClean = (fullName || '').toUpperCase().replace(/[^А-ЯЁA-Z]/g, '');
+  let vowelsSum = 0, consonantsSum = 0, totalSum = 0;
+  for (const ch of nameClean) {
+    const val = RU_NUM[ch] || 0;
+    if (!val) continue;
+    totalSum += val;
+    if (RU_VOWELS.includes(ch)) vowelsSum += val;
+    else consonantsSum += val;
+  }
 
-function calcNameNumber(name) {
-  if (!name || !name.trim()) return 0;
-  const sum = name.trim().split('').reduce((s, ch) => s + letterToNumber(ch), 0);
-  return reduceToSingle(sum);
+  let personalYear = '—', personalMonth = '—', personalDay = '—';
+  let eventYear = 0, eventMonth = 0, eventDay = 0;
+
+  if (eventDateStr) {
+    const eParts = eventDateStr.split('-').map(Number);
+    eventYear = eParts[0]; eventMonth = eParts[1]; eventDay = eParts[2];
+
+    const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
+    const birthdayThisYear = new Date(eventYear, birthMonth - 1, birthDay);
+    const activeYear = eventDate >= birthdayThisYear ? eventYear : eventYear - 1;
+
+    const activeYearNum = reduceNum(String(activeYear).split('').reduce((a, v) => a + Number(v), 0));
+    const pyNum = reduceNum(dayNum + monthNum + activeYearNum);
+    personalYear = pyNum;
+
+    const pmNum = reduceNum(pyNum + eventMonth);
+    personalMonth = pmNum;
+
+    const pdNum = reduceNum(pmNum + reduceNum(eventDay));
+    personalDay = pdNum;
+  }
+
+  return {
+    lifePath: lifePathNumber || '—',
+    birthday: dayNum,
+    expression: nameClean ? (reduceNum(totalSum) || '—') : '—',
+    soulUrge: nameClean ? (reduceNum(vowelsSum) || '—') : '—',
+    personality: nameClean ? (reduceNum(consonantsSum) || '—') : '—',
+    hasName: !!nameClean,
+    personalYear,
+    personalMonth,
+    personalDay,
+    eventYear, eventMonth, eventDay
+  };
 }
 
 // ═══ Инициализация ═══
@@ -867,14 +906,44 @@ window.calc = function() {
 
     // ──────── БЛОК 5: НУМЕРОЛОГИЯ ────────
     {
-      const lp = calcLifePath(bDate), bd = calcBirthdayNumber(bDate);
-      const nn = calcNameNumber(nameVal);
+      const numData = calcNumerology(bDate, nameVal, eDate);
+
       L.push(''); L.push('');
       L.push('══════════ 5. НУМЕРОЛОГИЯ ══════════');
       L.push('');
-      L.push('Число жизненного пути: ' + lp);
-      L.push('Число дня рождения: ' + bd);
-      if (nn) L.push('Число имени: ' + nn);
+      L.push('  Базовый профиль');
+      L.push('');
+      L.push('Число жизненного пути (по дате рождения): ' + numData.lifePath);
+      L.push('Ключевые склонности и рабочий потенциал. Предрасположенность к конкретным видам деятельности и уровень стрессоустойчивости.');
+      if (numData.hasName) {
+        L.push('');
+        L.push('Число выражения (по полному имени): ' + numData.expression);
+        L.push('Формат общения с окружающими. Предпочитаемый стиль работы в команде и способы преодоления кризисных ситуаций.');
+        L.push('');
+        L.push('Число душевного побуждения (по гласным): ' + numData.soulUrge);
+        L.push('Скрытая потребность в психологическом комфорте. Факторы, дающие чувство безопасности и удовлетворение от результатов.');
+        L.push('');
+        L.push('Число внешнего образа (по согласным): ' + numData.personality);
+        L.push('Реакция людей на первичный контакт. Черты характера, которые транслируются при первой встрече.');
+      } else {
+        L.push('');
+        L.push('(Для расчёта числа имени введите полное имя.)');
+      }
+
+      if (numData.personalYear !== '—') {
+        const monthNames = ['','января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+        L.push('');
+        L.push('  Прогностика на дату события (' + numData.eventDay + ' ' + monthNames[numData.eventMonth] + ' ' + numData.eventYear + ')');
+        L.push('');
+        L.push('Персональный год: ' + numData.personalYear);
+        L.push('Главная тема и энергия года (от дня рождения до дня рождения). Определяет, в каком цикле развития находится человек и какие задачи стоят на этот год.');
+        L.push('');
+        L.push('Персональный месяц: ' + numData.personalMonth);
+        L.push('Детализация энергии внутри года. Показывает, какие конкретные задачи и возможности активны в этом месяце.');
+        L.push('');
+        L.push('Персональный день: ' + numData.personalDay);
+        L.push('Энергия конкретного дня. Подходящие и неподходящие действия, настроение дня, тип событий.');
+      }
     }
 
     L.push(''); L.push('══════════════════════════════════════');
