@@ -64,6 +64,13 @@
   .city-name { font-weight: 500; font-size: 14px; color: #fff; }
   .city-region { font-size: 12px; color: #64748b; margin-left: 6px; }
   .city-tz { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #475569; margin-top: 4px; }
+  .toggle-row { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; padding: 12px 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; transition: all 0.2s; }
+  .toggle-row:hover { border-color: rgba(255,255,255,0.15); }
+  .toggle-row.active { border-color: #cba77b; }
+  .toggle-check { width: 18px; height: 18px; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; transition: all 0.2s; flex-shrink: 0; color: transparent; }
+  .toggle-row.active .toggle-check { border-color: #cba77b; background: #cba77b; color: #0d0e12; }
+  .toggle-text { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', monospace; }
+  .toggle-row.active .toggle-text { color: #cba77b; }
 </style>
 </head>
 <body>
@@ -88,7 +95,15 @@
     <div class="full"><div class="section-title">Данные рождения</div></div>
     <div class="full"><label>Имя</label><input id="name" placeholder="Введите имя" autocomplete="off"></div>
     <div><label>Дата рождения</label><input type="date" id="birthDate" value="1990-03-21"></div>
-    <div><label>Время рождения</label><input type="time" id="birthTime" value="14:30"></div>
+    <div id="timeField"><label>Время рождения</label><input type="time" id="birthTime" value="14:30"></div>
+    <div>
+      <label>&nbsp;</label>
+      <input type="checkbox" id="unknownTime" style="display:none;">
+      <div class="toggle-row" id="unknownTimeToggle" onclick="document.getElementById('unknownTime').checked=!document.getElementById('unknownTime').checked; this.classList.toggle('active'); document.getElementById('timeField').style.opacity=this.classList.contains('active')?'0.3':'1'; document.getElementById('timeField').style.pointerEvents=this.classList.contains('active')?'none':'auto';">
+        <span class="toggle-check">✓</span>
+        <span class="toggle-text">Время неизвестно</span>
+      </div>
+    </div>
     <div>
       <label>Город рождения</label>
       <div class="autocomplete">
@@ -493,6 +508,43 @@ function calcCrossAspects(movingPos, natalPos, aspectDefs) {
   return result.sort((a, b) => a.orbNum - b.orbNum);
 }
 
+// ═══ Нумерология ═══
+
+function reduceToSingle(n) {
+  while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
+    n = String(n).split('').reduce((s, d) => s + parseInt(d), 0);
+  }
+  return n;
+}
+
+function calcLifePath(dateStr) {
+  const digits = dateStr.replace(/\D/g, '');
+  const sum = digits.split('').reduce((s, d) => s + parseInt(d), 0);
+  return reduceToSingle(sum);
+}
+
+function calcBirthdayNumber(dateStr) {
+  const day = parseInt(dateStr.split('-')[2]);
+  return reduceToSingle(day);
+}
+
+function letterToNumber(ch) {
+  const upper = ch.toUpperCase();
+  const ru = 'АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+  const idx = ru.indexOf(upper);
+  if (idx !== -1) return idx + 1;
+  const en = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const eidx = en.indexOf(upper);
+  if (eidx !== -1) return eidx + 1;
+  return 0;
+}
+
+function calcNameNumber(name) {
+  if (!name || !name.trim()) return 0;
+  const sum = name.trim().split('').reduce((s, ch) => s + letterToNumber(ch), 0);
+  return reduceToSingle(sum);
+}
+
 // ═══ Инициализация ═══
 
 async function initSWE() {
@@ -524,7 +576,8 @@ window.calc = function() {
   try {
     // ── Данные рождения ──
     const bDate = document.getElementById('birthDate').value;
-    const bTime = document.getElementById('birthTime').value;
+    const isUnknownTime = document.getElementById('unknownTime').checked;
+    const bTime = isUnknownTime ? '12:00' : document.getElementById('birthTime').value;
     const bLat = parseFloat(document.getElementById('birthLat').value);
     const bLon = parseFloat(document.getElementById('birthLon').value);
     const bTz = document.getElementById('birthTz').value;
@@ -540,7 +593,7 @@ window.calc = function() {
     const eLon = parseFloat(document.getElementById('eventLon').value);
     const eventCityVal = document.getElementById('eventCity').value;
 
-    if (!bDate || !bTime || !bLat || !bLon || !bTz) throw new Error('Заполните все поля данных рождения.');
+    if (!bDate || (!isUnknownTime && !bTime) || !bLat || !bLon || !bTz) throw new Error('Заполните все поля данных рождения.');
     if (!eDate) throw new Error('Укажите дату события.');
 
     const [bYear, bMonth, bDay] = bDate.split('-').map(Number);
@@ -627,24 +680,33 @@ window.calc = function() {
     if (nameVal) L.push('Имя: ' + nameVal);
     if (gender) L.push('Пол: ' + gender);
     L.push('Дата рождения: ' + bDate);
-    L.push('Время рождения: ' + bTime + ' (' + uBirth.tzAbbr + ', UTC' + (uBirth.utcOffset >= 0 ? '+' : '') + uBirth.utcOffset + ')');
+    if (isUnknownTime) {
+      L.push('Время рождения: неизвестно (расчёт на 12:00)');
+    } else {
+      L.push('Время рождения: ' + bTime + ' (' + uBirth.tzAbbr + ', UTC' + (uBirth.utcOffset >= 0 ? '+' : '') + uBirth.utcOffset + ')');
+    }
     L.push('Место: ' + (birthCityVal || '') + ' (' + bLat.toFixed(4) + '°, ' + bLon.toFixed(4) + '°)');
 
-    L.push(''); L.push('────────── ОСНОВНЫЕ ТОЧКИ ──────────'); L.push('');
-    L.push('ASC (Асцендент): ' + fmtDeg(natalHouses.asc));
-    L.push('MC (Середина неба): ' + fmtDeg(natalHouses.mc));
-    L.push('DSC (Десцендент): ' + fmtDeg(norm(natalHouses.asc + 180)));
-    L.push('IC (Глубина неба): ' + fmtDeg(norm(natalHouses.mc + 180)));
+    if (!isUnknownTime) {
+      L.push(''); L.push('────────── ОСНОВНЫЕ ТОЧКИ ──────────'); L.push('');
+      L.push('ASC (Асцендент): ' + fmtDeg(natalHouses.asc));
+      L.push('MC (Середина неба): ' + fmtDeg(natalHouses.mc));
+      L.push('DSC (Десцендент): ' + fmtDeg(norm(natalHouses.asc + 180)));
+      L.push('IC (Глубина неба): ' + fmtDeg(norm(natalHouses.mc + 180)));
+    }
 
     L.push(''); L.push('────────── ПЛАНЕТЫ ──────────'); L.push('');
     PLANET_ORDER.forEach(k => {
       const p = natalPos[k]; if (!p) return;
-      const i = degToSign(p.longitude), ho = houseOf(p.longitude, natalHouses.cusps), r = p.retrograde ? ' (R)' : '';
-      L.push(`${PLANET_NAMES[k]}: ${i.degree}\u00B0${String(i.minute).padStart(2,'0')}'${String(i.second).padStart(2,'0')}" ${i.sign}, дом ${ho}${r}`);
+      const i = degToSign(p.longitude), r = p.retrograde ? ' (R)' : '';
+      const ho = !isUnknownTime ? ', дом ' + houseOf(p.longitude, natalHouses.cusps) : '';
+      L.push(`${PLANET_NAMES[k]}: ${i.degree}\u00B0${String(i.minute).padStart(2,'0')}'${String(i.second).padStart(2,'0')}" ${i.sign}${ho}${r}`);
     });
 
-    L.push(''); L.push('────────── КУСПИДЫ ДОМОВ ──────────'); L.push('');
-    natalHouses.cusps.forEach((c, i) => L.push('Дом ' + String(i+1).padStart(2) + ': ' + fmtDeg(c)));
+    if (!isUnknownTime) {
+      L.push(''); L.push('────────── КУСПИДЫ ДОМОВ ──────────'); L.push('');
+      natalHouses.cusps.forEach((c, i) => L.push('Дом ' + String(i+1).padStart(2) + ': ' + fmtDeg(c)));
+    }
 
     L.push(''); L.push('────────── АСПЕКТЫ ──────────'); L.push('');
     if (!natalAspects.length) L.push('Аспекты не обнаружены');
@@ -654,17 +716,19 @@ window.calc = function() {
       L.push(`${n1} ${a.type} ${n2} (орб ${a.orb}°${ap})`);
     });
 
-    L.push(''); L.push('────────── ПАРАЛЛЕЛИ И КОНТРПАРАЛЛЕЛИ ──────────'); L.push('');
-    if (!par.length) L.push('Параллели не обнаружены');
-    else par.forEach(p => L.push(`${PLANET_NAMES[p.planet1]||p.planet1} ${p.type} ${PLANET_NAMES[p.planet2]||p.planet2} (орб ${p.orb}°)`));
+    if (!isUnknownTime) {
+      L.push(''); L.push('────────── ПАРАЛЛЕЛИ И КОНТРПАРАЛЛЕЛИ ──────────'); L.push('');
+      if (!par.length) L.push('Параллели не обнаружены');
+      else par.forEach(p => L.push(`${PLANET_NAMES[p.planet1]||p.planet1} ${p.type} ${PLANET_NAMES[p.planet2]||p.planet2} (орб ${p.orb}°)`));
 
-    L.push(''); L.push('────────── КОНФИГУРАЦИИ ──────────'); L.push('');
-    if (!cfgs.length) L.push('Конфигурации не обнаружены');
-    else cfgs.forEach(c => {
-      const planets = c.planets.map(p => PLANET_NAMES[p]||p).join(', ');
-      const apex = c.apex ? ' (вершина: ' + (PLANET_NAMES[c.apex]||c.apex) + ')' : '';
-      L.push(`${c.type}: ${planets}${apex}`);
-    });
+      L.push(''); L.push('────────── КОНФИГУРАЦИИ ──────────'); L.push('');
+      if (!cfgs.length) L.push('Конфигурации не обнаружены');
+      else cfgs.forEach(c => {
+        const planets = c.planets.map(p => PLANET_NAMES[p]||p).join(', ');
+        const apex = c.apex ? ' (вершина: ' + (PLANET_NAMES[c.apex]||c.apex) + ')' : '';
+        L.push(`${c.type}: ${planets}${apex}`);
+      });
+    }
 
     L.push(''); L.push('────────── СТИХИИ ──────────'); L.push('');
     Object.entries(stats.elements).forEach(([e, p]) => L.push(`${e}: ${p.length} (${p.join(', ')||'—'})`));
@@ -676,11 +740,13 @@ window.calc = function() {
     L.push(`Активный (экстраверт): ${stats.polarity.active.length} (${stats.polarity.active.join(', ')||'—'})`);
     L.push(`Восприимчивый (интроверт): ${stats.polarity.receptive.length} (${stats.polarity.receptive.join(', ')||'—'})`);
 
-    L.push(''); L.push('────────── ПОЛУСФЕРЫ ──────────'); L.push('');
-    L.push('Восточная (1-3, 10-12): ' + stats.hemispheres.east + ' планет');
-    L.push('Западная (4-9): ' + stats.hemispheres.west + ' планет');
-    L.push('Южная / Верхняя (7-12): ' + stats.hemispheres.south + ' планет');
-    L.push('Северная / Нижняя (1-6): ' + stats.hemispheres.north + ' планет');
+    if (!isUnknownTime) {
+      L.push(''); L.push('────────── ПОЛУСФЕРЫ ──────────'); L.push('');
+      L.push('Восточная (1-3, 10-12): ' + stats.hemispheres.east + ' планет');
+      L.push('Западная (4-9): ' + stats.hemispheres.west + ' планет');
+      L.push('Южная / Верхняя (7-12): ' + stats.hemispheres.south + ' планет');
+      L.push('Северная / Нижняя (1-6): ' + stats.hemispheres.north + ' планет');
+    }
 
     // ──────── БЛОК 2: НАТАЛ + ТРАНЗИТЫ ────────
     L.push(''); L.push('');
@@ -798,6 +864,18 @@ window.calc = function() {
 
     L.push(''); L.push('────────── КУСПИДЫ ПРОГРЕССИВНЫХ ДОМОВ ──────────'); L.push('');
     for (let i = 0; i < 12; i++) L.push(`${String(i+1).padEnd(4)} ${fmtDeg(progHouses.cusps[i])}`);
+
+    // ──────── БЛОК 5: НУМЕРОЛОГИЯ ────────
+    {
+      const lp = calcLifePath(bDate), bd = calcBirthdayNumber(bDate);
+      const nn = calcNameNumber(nameVal);
+      L.push(''); L.push('');
+      L.push('══════════ 5. НУМЕРОЛОГИЯ ══════════');
+      L.push('');
+      L.push('Число жизненного пути: ' + lp);
+      L.push('Число дня рождения: ' + bd);
+      if (nn) L.push('Число имени: ' + nn);
+    }
 
     L.push(''); L.push('══════════════════════════════════════');
 
