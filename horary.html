@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Хорарная карта</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0e12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg-color: #050505;
+  --surface-color: #0f0f11;
+  --border-color: #222226;
+  --text-primary: #f8f8f8;
+  --text-secondary: #8a8a93;
+  --accent-gold: #dcb37b;
+  --accent-gold-hover: #f0ce9a;
+  --error-color: #e57373;
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background-color: var(--bg-color); background-image: radial-gradient(circle at 50% 0%, #16161a 0%, transparent 70%); color: var(--text-primary); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; -webkit-font-smoothing: antialiased; line-height: 1.5; }
+::selection { background: var(--accent-gold); color: #000; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+
+.header { padding: 40px 0 30px; margin-bottom: 20px; }
+.header-inner { display: flex; flex-direction: column; gap: 24px; }
+.header-text { text-align: center; }
+h1 { font-size: 28px; font-weight: 500; letter-spacing: -0.5px; margin-bottom: 6px; }
+.sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-secondary); letter-spacing: 0.5px; text-transform: uppercase; }
+
+.nav-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.nav-row a, .status { padding: 10px 18px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 100px; color: var(--text-secondary); font-size: 12px; font-weight: 500; text-decoration: none; transition: all 0.2s ease; font-family: 'DM Sans', sans-serif; }
+.nav-row a:hover { border-color: var(--accent-gold); color: var(--accent-gold); background: transparent; }
+.status { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.status.loading { border-color: #555; color: #aaa; }
+.status.err { border-color: rgba(229,115,115,0.3); color: var(--error-color); background: rgba(229,115,115,0.05); }
+.status.ok { border-color: rgba(129,199,132,0.3); color: #81c784; background: rgba(129,199,132,0.05); }
+
+.form-wrap, .out-wrap { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 40px; margin-bottom: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; } .form-wrap { padding: 24px; } }
+.full { grid-column: 1 / -1; }
+label { font-size: 11px; font-weight: 600; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 10px; }
+input, select { width: 100%; padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 15px; font-family: 'JetBrains Mono', monospace; outline: none; transition: all 0.2s ease; -webkit-appearance: none; }
+input:hover, select:hover { border-color: #333; }
+input:focus, select:focus { border-color: var(--accent-gold); box-shadow: 0 0 0 3px rgba(220,179,123,0.1); }
+input::placeholder { color: #444; }
+.row { display: flex; gap: 16px; }
+.row > * { flex: 1; }
+.btn { margin-top: 32px; width: 100%; padding: 18px; background: var(--accent-gold); color: #000; border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; font-family: 'DM Sans', sans-serif; }
+.btn:hover { background: var(--accent-gold-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(220,179,123,0.2); }
+.btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-now { font-size: 12px; padding: 8px 18px; display: inline-block; background: transparent; border: 1px solid var(--accent-gold); color: var(--accent-gold); border-radius: 100px; cursor: pointer; transition: 0.2s; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+.btn-now:hover { background: var(--accent-gold); color: #000; }
+.out-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.out-title { font-size: 11px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; }
+.copy-btn { padding: 8px 16px; background: transparent; border: 1px solid var(--border-color); border-radius: 100px; color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s; font-family: 'DM Sans', sans-serif; }
+.copy-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.copy-btn.copied { background: var(--accent-gold); color: #000; border-color: var(--accent-gold); }
+textarea { width: 100%; padding: 24px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; resize: vertical; outline: none; }
+.autocomplete { position: relative; }
+.autocomplete-items { position: absolute; z-index: 99; top: calc(100% + 8px); left: 0; right: 0; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-y: auto; max-height: 250px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+.autocomplete-items div { padding: 14px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: 0.2s; color: var(--text-primary); }
+.autocomplete-items div:last-child { border-bottom: none; }
+.autocomplete-items div:hover { background: var(--bg-color); padding-left: 20px; }
+.city-name { font-weight: 500; color: var(--text-primary); }
+.city-region { font-size: 12px; color: var(--text-secondary); margin-left: 6px; }
+.city-tz { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #555; margin-top: 4px; }
+.error { color: var(--error-color); margin-top: 16px; font-size: 13px; text-align: center; }
+.footer { padding: 20px; text-align: center; font-size: 12px; color: #555; }
+.tz-hint { font-size: 11px; color: var(--text-secondary); margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="wrap header-inner">
+    <div class="header-text">
+      <h1>Хорарная карта</h1>
+      <p class="sub">Региомонтан · Птолемеевские аспекты · Планетарные часы</p>
+    </div>
+    <div class="nav-row">
+      <span class="status loading" id="sweStatus">загрузка...</span>
+      <a href="index.html">Натальная</a>
+      <a href="natal-transits.html">Н+Транзиты</a>
+      <a href="transits.html">Транзиты</a>
+      <a href="solar.html">Соляр</a>
+      <a href="lunar.html">Лунар</a>
+      <a href="relocation.html">Релокация</a>
+      <a href="combo.html">Комбо</a>
+      <a href="compatibility.html">Совместимость</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap form-wrap">
+  <div style="text-align:center;margin-bottom:24px;">
+    <button class="btn-now" onclick="setNow()">⏱ Засечь текущее время</button>
+  </div>
+  <div class="grid">
+    <div class="full"><label>Суть вопроса</label><input id="questionText" placeholder="Например: Получу ли я эту работу?" autocomplete="off"></div>
+    <div class="full">
+      <label>Тема вопроса (Дом Квезита)</label>
+      <select id="quesitedHouse">
+        <option value="1">1 дом: Сам кверент, его тело, внешность</option>
+        <option value="2">2 дом: Деньги, потерянные вещи, имущество</option>
+        <option value="3">3 дом: Братья/сестры, соседи, поездки, слухи</option>
+        <option value="4">4 дом: Недвижимость, земля, отец, исход дела</option>
+        <option value="5">5 дом: Дети, беременность, любовники, творчество</option>
+        <option value="6">6 дом: Болезни, животные, подчинённые</option>
+        <option value="7" selected>7 дом: Брак, партнёрство, враги, сделки, суды</option>
+        <option value="8">8 дом: Чужие деньги, кредиты, наследство, смерть</option>
+        <option value="9">9 дом: Заграница, дальние поездки, образование</option>
+        <option value="10">10 дом: Карьера, начальство, мать, успех</option>
+        <option value="11">11 дом: Друзья, надежды, прибыль от работы</option>
+        <option value="12">12 дом: Тайные враги, тюрьма, страхи, изоляция</option>
+      </select>
+    </div>
+    <div><label>Дата вопроса</label><input type="date" id="date"></div>
+    <div><label>Время (местное)</label><input type="time" id="time"></div>
+    <div class="full">
+      <label>Город</label>
+      <div class="autocomplete"><input id="city" placeholder="Начните вводить город..." autocomplete="off"></div>
+    </div>
+    <div class="full">
+      <label>Координаты</label>
+      <div class="row">
+        <div><input id="lat" placeholder="Широта"></div>
+        <div><input id="lon" placeholder="Долгота"></div>
+      </div>
+    </div>
+    <div class="full">
+      <label>Часовой пояс (IANA)</label>
+      <input id="tz" placeholder="Europe/Moscow">
+    </div>
+  </div>
+  <button class="btn" id="calcBtn" onclick="window.calculate()">РАССЧИТАТЬ ХОРАР</button>
+  <div id="error" class="error"></div>
+</div>
+
+<div class="wrap" id="resultBlock" style="display:none;">
+  <div class="out-wrap">
+    <div class="out-head">
+      <span class="out-title">Хорарная карта — готово</span>
+      <button class="copy-btn" id="copyBtn" onclick="window.copyText()">⎘ Копировать</button>
+    </div>
+    <textarea id="output" rows="50" readonly></textarea>
+  </div>
+</div>
+
+<div class="wrap"><div class="footer">
+  <p>Swiss Ephemeris (WASM) · Система домов: Региомонтан · Аспекты: Птолемеевские</p>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.45/moment-timezone-with-data.min.js"></script>
+
+<script type="module">
+
+let swe = null;
+const SE_SUN = 0, SE_MOON = 1, SE_MERCURY = 2, SE_VENUS = 3, SE_MARS = 4;
+const SE_JUPITER = 5, SE_SATURN = 6, SE_URANUS = 7, SE_NEPTUNE = 8, SE_PLUTO = 9;
+const SE_TRUE_NODE = 11, SE_MEAN_APOG = 12;
+const SEFLG_SPEED = 256, SE_GREG_CAL = 1;
+
+const SE_BODIES = {
+  sun: SE_SUN, moon: SE_MOON, mercury: SE_MERCURY, venus: SE_VENUS,
+  mars: SE_MARS, jupiter: SE_JUPITER, saturn: SE_SATURN,
+  uranus: SE_URANUS, neptune: SE_NEPTUNE, pluto: SE_PLUTO,
+  north_node: SE_TRUE_NODE, lilith: SE_MEAN_APOG
+};
+
+const SIGNS = ['Овен','Телец','Близнецы','Рак','Лев','Дева','Весы','Скорпион','Стрелец','Козерог','Водолей','Рыбы'];
+
+const PLANET_NAMES = {
+  sun:'Солнце', moon:'Луна', mercury:'Меркурий', venus:'Венера',
+  mars:'Марс', jupiter:'Юпитер', saturn:'Сатурн', uranus:'Уран',
+  neptune:'Нептун', pluto:'Плутон', north_node:'Сев.узел',
+  south_node:'Юж.узел', lilith:'Лилит'
+};
+
+const SEPTENER = ['sun','moon','mercury','venus','mars','jupiter','saturn'];
+const PLANET_ORDER = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','north_node'];
+
+// Птолемеевские аспекты с моэтическими орбами планет
+const ASPECT_ANGLES = [0, 60, 90, 120, 180];
+const ASPECT_NAMES = { 0:'Соединение', 60:'Секстиль', 90:'Квадратура', 120:'Тригон', 180:'Оппозиция' };
+
+// Моэтические орбы (половина от полного орба планеты)
+const PLANET_ORBS = {
+  sun: 7.5, moon: 6, mercury: 3.5, venus: 3.5, mars: 3.5,
+  jupiter: 4.5, saturn: 4.5, uranus: 2.5, neptune: 2.5, pluto: 2.5,
+  north_node: 1.5, south_node: 1.5, lilith: 1.5
+};
+
+// Эссенциальные достоинства (управление и экзальтация)
+const DIGNITIES = [
+  { ruler:'mars',    exalt:'sun',    detri:'venus',   fall:'saturn'  }, // Овен
+  { ruler:'venus',   exalt:'moon',   detri:'mars',    fall:null      }, // Телец
+  { ruler:'mercury', exalt:null,     detri:'jupiter',  fall:null      }, // Близнецы
+  { ruler:'moon',    exalt:'jupiter',detri:'saturn',   fall:'mars'    }, // Рак
+  { ruler:'sun',     exalt:null,     detri:'saturn',   fall:null      }, // Лев
+  { ruler:'mercury', exalt:'mercury',detri:'jupiter',  fall:'venus'   }, // Дева
+  { ruler:'venus',   exalt:'saturn', detri:'mars',     fall:'sun'     }, // Весы
+  { ruler:'mars',    exalt:null,     detri:'venus',    fall:'moon'    }, // Скорпион
+  { ruler:'jupiter', exalt:null,     detri:'mercury',  fall:null      }, // Стрелец
+  { ruler:'saturn',  exalt:'mars',   detri:'moon',     fall:'jupiter' }, // Козерог
+  { ruler:'saturn',  exalt:null,     detri:'sun',      fall:null      }, // Водолей
+  { ruler:'jupiter', exalt:'venus',  detri:'mercury',  fall:'mercury' }  // Рыбы
+];
+
+// Планетарные часы — последовательность Халдейского ряда
+const CHALDEAN_ORDER = ['saturn','jupiter','mars','sun','venus','mercury','moon'];
+// Управители дней недели (0=Вс, 1=Пн...)
+const DAY_RULERS = ['sun','moon','mars','mercury','jupiter','venus','saturn'];
+
+// ═══ УТИЛИТЫ ═══
+
+function norm(d) { let r = d % 360; return r < 0 ? r + 360 : r; }
+const toRad = d => d * Math.PI / 180;
+
+function degToSign(deg) {
+  if (isNaN(deg)) return { sign:'?', signIndex:0, degree:0, minute:0, second:0 };
+  const d = norm(deg), idx = Math.floor(d / 30), rem = d % 30;
+  return { sign: SIGNS[idx], signIndex: idx, degree: Math.floor(rem),
+    minute: Math.floor((rem % 1) * 60), second: Math.floor(((rem % 1) * 60 % 1) * 60), absolute: d };
+}
+
+function fmtDeg(deg) {
+  if (isNaN(deg)) return '—';
+  const i = degToSign(deg);
+  return `${i.degree}\u00B0${String(i.minute).padStart(2,'0')}' ${i.sign}`;
+}
+
+function houseOf(deg, cusps) {
+  if (!cusps || cusps.length < 12 || isNaN(deg)) return 1;
+  const d = norm(deg);
+  for (let i = 0; i < 12; i++) {
+    const s = cusps[i], e = cusps[(i + 1) % 12];
+    if (s > e) { if (d >= s || d < e) return i + 1; }
+    else       { if (d >= s && d < e) return i + 1; }
+  }
+  return 1;
+}
+
+// ═══ SWE ОБЁРТКИ ═══
+
+function sweJulday(y, m, d, h) { return (swe.julday || swe.swe_julday).call(swe, y, m, d, h, SE_GREG_CAL); }
+
+function sweCalcUt(jd, body) {
+  const r = (swe.calc_ut || swe.swe_calc_ut).call(swe, jd, body, SEFLG_SPEED);
+  if (r && r.data && Array.isArray(r.data)) return r.data;
+  if (r && r.xx) return r.xx;
+  if (Array.isArray(r)) return r;
+  if (r && r.longitude !== undefined) return [r.longitude, r.latitude||0, r.distance||0, r.longitudeSpeed||0];
+  return [0,0,0,0];
+}
+
+function sweHouses(jd, lat, lon, sys) {
+  const hsys = typeof sys === 'string' ? sys.charCodeAt(0) : sys;
+  const r = (swe.houses || swe.swe_houses).call(swe, jd, lat, lon, hsys);
+  let cusps = [], ascmc = [];
+  if (r) {
+    cusps = r.cusps || r.house || r.houses || (r.data && (r.data.houses || r.data.cusps)) || [];
+    ascmc = r.ascmc || r.points || (r.data && (r.data.ascmc || r.data.points)) || [];
+    if (Array.isArray(r) && r.length === 2) { cusps = r[0]; ascmc = r[1]; }
+  }
+  if (cusps.length === 13) cusps = cusps.slice(1);
+  return { cusps, ascmc };
+}
+
+function localToUTC(year, month, day, hour, minute, tz) {
+  const ds = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+  const cleanTz = String(tz||'').trim();
+  let loc;
+  const isOff = /^[-+]?\d+(\.\d+)?$/.test(cleanTz) || /^[-+]?\d{1,2}:\d{2}$/.test(cleanTz);
+  if (isOff) loc = moment(ds, 'YYYY-MM-DD HH:mm').utcOffset(parseFloat(cleanTz), true);
+  else loc = moment.tz(ds, 'YYYY-MM-DD HH:mm', cleanTz);
+  if (!loc.isValid()) throw new Error('Невалидная дата/пояс: ' + ds + ' / ' + cleanTz);
+  const off = loc.utcOffset() / 60;
+  let abbr = loc.format('z');
+  if (isOff) abbr = 'UTC' + (off >= 0 ? '+' : '') + off;
+  const u = loc.clone().utc();
+  return { year: u.year(), month: u.month()+1, day: u.date(), hour: u.hour(), minute: u.minute(), second: u.second(), utcOffset: off, tzAbbr: abbr };
+}
+
+// ═══ РАСЧЁТЫ ═══
+
+function calcPositions(jd) {
+  const pos = {};
+  for (const [name, code] of Object.entries(SE_BODIES)) {
+    const data = sweCalcUt(jd, code);
+    pos[name] = { longitude: norm(data[0]), speed: data[3] || 0, retrograde: (data[3] || 0) < 0 };
+  }
+  if (pos.north_node) {
+    pos.north_node.retrograde = true;
+    pos.south_node = { longitude: norm(pos.north_node.longitude + 180), retrograde: true, speed: -(pos.north_node.speed || 0) };
+  }
+  return pos;
+}
+
+function calcAllHouses(jd, lat, lon) {
+  const { cusps, ascmc } = sweHouses(jd, lat, lon, 'R'); // Региомонтан
+  const asc = (!isNaN(ascmc[0])) ? ascmc[0] : 0;
+  const mc  = (!isNaN(ascmc[1])) ? ascmc[1] : 0;
+  let fc = cusps;
+  if (fc.length < 12 && asc) { fc = []; for (let i = 0; i < 12; i++) fc.push(norm(asc + i * 30)); }
+  return { cusps: fc, asc: norm(asc), mc: norm(mc) };
+}
+
+// Аспекты с моэтическими орбами
+function calcAspects(pos) {
+  const asp = [], keys = Object.keys(pos);
+  for (let i = 0; i < keys.length; i++) for (let j = i+1; j < keys.length; j++) {
+    const k1 = keys[i], k2 = keys[j];
+    if (!pos[k1] || !pos[k2] || isNaN(pos[k1].longitude) || isNaN(pos[k2].longitude)) continue;
+    let d = Math.abs(pos[k1].longitude - pos[k2].longitude); if (d > 180) d = 360 - d;
+    const orb1 = PLANET_ORBS[k1] || 2, orb2 = PLANET_ORBS[k2] || 2;
+    const maxOrb = (orb1 + orb2) / 2; // Среднее моэтических половин
+    for (const angle of ASPECT_ANGLES) {
+      const o = Math.abs(d - angle);
+      if (o <= maxOrb) {
+        const s1 = pos[k1].speed||0, s2 = pos[k2].speed||0, sd = s1 - s2;
+        let ap = null;
+        if (d < angle) ap = sd > 0 ? false : true; else ap = sd > 0 ? true : false;
+        asp.push({ planet1:k1, planet2:k2, type: ASPECT_NAMES[angle], angle, orb: o.toFixed(2), applying: ap });
+      }
+    }
+  }
+  return asp.sort((a,b) => parseFloat(a.orb) - parseFloat(b.orb));
+}
+
+// ═══ ХОРАРНЫЕ ФУНКЦИИ ═══
+
+// Управитель дома
+function getHouseRuler(houseNum, cusps) {
+  if (!cusps || cusps.length < 12) return null;
+  const cuspDeg = cusps[houseNum - 1];
+  const si = degToSign(cuspDeg);
+  const dig = DIGNITIES[si.signIndex];
+  return { house: houseNum, sign: si.sign, cuspDeg, rulerKey: dig.ruler, rulerName: PLANET_NAMES[dig.ruler] };
+}
+
+// Эссенциальные достоинства
+function getPlanetDignity(planetKey, deg) {
+  if (isNaN(deg)) return [];
+  const si = degToSign(deg);
+  const d = DIGNITIES[si.signIndex];
+  const st = [];
+  if (d.ruler === planetKey) st.push('Обитель');
+  if (d.exalt === planetKey) st.push('Экзальтация');
+  if (d.detri === planetKey) st.push('Изгнание');
+  if (d.fall === planetKey) st.push('Падение');
+  return st;
+}
+
+function getDignityText(planetKey, deg) {
+  const d = getPlanetDignity(planetKey, deg);
+  return d.length ? d.join(', ') : 'Перегрин';
+}
+
+// Сожжение / Казими / Под лучами
+function getCombustion(planetKey, sunLon, planetLon) {
+  if (planetKey === 'sun') return null;
+  let d = Math.abs(sunLon - planetLon); if (d > 180) d = 360 - d;
+  if (d <= 0.283) return 'Казими (в сердце Солнца)'; // 0°17'
+  if (d <= 8.5) return 'Сожжённая'; // 8°30'
+  if (d <= 17) return 'Под лучами';
+  return null;
+}
+
+// Антисы
+function calcAntiscion(deg) { return norm(180 - deg + 180); } // Зеркало по 0° Рака / 0° Козерога = 360 - deg
+function calcContraAntiscion(deg) { return norm(360 - deg); } // = 180° от антиса
+
+// Рецепция
+function checkReception(p1Key, p1Deg, p2Key, p2Deg) {
+  if (isNaN(p1Deg) || isNaN(p2Deg)) return null;
+  const s1 = degToSign(p1Deg), s2 = degToSign(p2Deg);
+  const d1 = DIGNITIES[s1.signIndex], d2 = DIGNITIES[s2.signIndex];
+  let p1in2 = null, p2in1 = null;
+  if (d1.ruler === p2Key) p1in2 = 'управлению';
+  else if (d1.exalt === p2Key) p1in2 = 'экзальтации';
+  if (d2.ruler === p1Key) p2in1 = 'управлению';
+  else if (d2.exalt === p1Key) p2in1 = 'экзальтации';
+  if (p1in2 && p2in1) {
+    return p1in2 === p2in1 ? `Взаимная рецепция по ${p1in2}` : `Смешанная рецепция (${p1in2} / ${p2in1})`;
+  }
+  return null;
+}
+
+// Луна без курса (итерационный метод — двигаем Луну вперёд)
+function isMoonVOC(jd) {
+  const moonData = sweCalcUt(jd, SE_MOON);
+  const moonLon = norm(moonData[0]);
+  const moonSign = Math.floor(moonLon / 30);
+  const moonSpeed = moonData[3] || 13;
+  // Сколько градусов до конца знака
+  const degToEnd = 30 - (moonLon % 30);
+  // Приблизительно дней до конца знака
+  const daysToEnd = degToEnd / Math.abs(moonSpeed);
+  // Проверяем с шагом 0.02 дня (~30 мин)
+  const step = 0.02;
+  for (let dt = step; dt <= daysToEnd + step; dt += step) {
+    const futureJd = jd + dt;
+    const futureMoon = sweCalcUt(futureJd, SE_MOON);
+    const futureLon = norm(futureMoon[0]);
+    const futureSign = Math.floor(futureLon / 30);
+    // Луна вышла из знака — остановка
+    if (futureSign !== moonSign) break;
+    // Проверяем аспекты к септенеру
+    for (const pk of ['sun','mercury','venus','mars','jupiter','saturn']) {
+      const pData = sweCalcUt(futureJd, SE_BODIES[pk]);
+      const pLon = norm(pData[0]);
+      let diff = Math.abs(futureLon - pLon); if (diff > 180) diff = 360 - diff;
+      for (const angle of ASPECT_ANGLES) {
+        if (Math.abs(diff - angle) < 0.5) return false; // Найден точный аспект
+      }
+    }
+  }
+  return true; // Не найдено ни одного аспекта до конца знака
+}
+
+// Последний и следующий аспект Луны
+function getMoonLastNext(jd, pos) {
+  const moonLon = pos.moon.longitude;
+  const moonSpeed = pos.moon.speed || 13;
+  let lastAsp = null, nextAsp = null;
+  // Ищем назад (до 3 дней) и вперёд (до 3 дней)
+  for (const dir of [-1, 1]) {
+    const step = 0.01 * dir;
+    const limit = 3 * Math.abs(dir);
+    let prevDiffs = {};
+    for (let dt = step; Math.abs(dt) <= limit; dt += step) {
+      const fJd = jd + dt;
+      const fMoon = norm(sweCalcUt(fJd, SE_MOON)[0]);
+      for (const pk of SEPTENER) {
+        if (pk === 'moon') continue;
+        const pLon = norm(sweCalcUt(fJd, SE_BODIES[pk])[0]);
+        let diff = Math.abs(fMoon - pLon); if (diff > 180) diff = 360 - diff;
+        for (const angle of ASPECT_ANGLES) {
+          const orb = Math.abs(diff - angle);
+          const key = pk + '_' + angle;
+          if (orb < 0.3) {
+            if (dir === -1 && !lastAsp) lastAsp = { planet: pk, type: ASPECT_NAMES[angle], dt: Math.abs(dt) };
+            if (dir === 1 && !nextAsp) nextAsp = { planet: pk, type: ASPECT_NAMES[angle], dt: Math.abs(dt) };
+          }
+        }
+        if ((dir === -1 && lastAsp) || (dir === 1 && nextAsp)) break;
+      }
+      if ((dir === -1 && lastAsp) || (dir === 1 && nextAsp)) break;
+    }
+  }
+  return { last: lastAsp, next: nextAsp };
+}
+
+// Планетарный час
+function getPlanetaryHour(localMoment, lat, lon) {
+  // Упрощённый расчёт восхода/захода по формуле
+  const dayOfWeek = localMoment.day(); // 0=Вс
+  const dayRuler = DAY_RULERS[dayOfWeek];
+  const dayRulerIdx = CHALDEAN_ORDER.indexOf(dayRuler);
+
+  // Расчёт длительности дня/ночи (приближённо)
+  const dayOfYear = localMoment.dayOfYear();
+  const decl = 23.44 * Math.sin(toRad((360 / 365) * (dayOfYear + 284)));
+  const latRad = toRad(lat);
+  const declRad = toRad(decl);
+  let cosHA = -Math.tan(latRad) * Math.tan(declRad);
+  cosHA = Math.max(-1, Math.min(1, cosHA));
+  const HA = Math.acos(cosHA) * 180 / Math.PI; // В градусах
+  const sunriseHour = 12 - HA / 15;
+  const sunsetHour = 12 + HA / 15;
+
+  const currentHour = localMoment.hours() + localMoment.minutes() / 60;
+  let hourIndex, isDay;
+
+  if (currentHour >= sunriseHour && currentHour < sunsetHour) {
+    // Дневной час
+    isDay = true;
+    const dayLength = sunsetHour - sunriseHour;
+    const planetaryHourLen = dayLength / 12;
+    hourIndex = Math.floor((currentHour - sunriseHour) / planetaryHourLen);
+  } else {
+    // Ночной час
+    isDay = false;
+    const nightLength = 24 - (sunsetHour - sunriseHour);
+    const planetaryHourLen = nightLength / 12;
+    let nightElapsed;
+    if (currentHour >= sunsetHour) nightElapsed = currentHour - sunsetHour;
+    else nightElapsed = (24 - sunsetHour) + currentHour;
+    hourIndex = Math.floor(nightElapsed / planetaryHourLen);
+  }
+
+  hourIndex = Math.min(hourIndex, 11);
+
+  // Халдейский порядок от управителя дня
+  const totalOffset = isDay ? hourIndex : hourIndex + 12;
+  const planetIdx = (dayRulerIdx + totalOffset) % 7;
+  const hourRuler = CHALDEAN_ORDER[planetIdx];
+
+  return { hourRuler, hourRulerName: PLANET_NAMES[hourRuler], dayRuler, dayRulerName: PLANET_NAMES[dayRuler], hourNum: hourIndex + 1, isDay };
+}
+
+// Радикальность карты
+function checkRadicality(hourRuler, ascRulerKey, cusps) {
+  const reasons = [];
+  const ascSign = Math.floor(norm(cusps[0]) / 30);
+  // 1. Управитель часа = управитель ASC
+  if (hourRuler === ascRulerKey) reasons.push('Управитель планетарного часа совпадает с управителем ASC');
+  // 2. Управитель часа той же стихии/триплицитета что и ASC
+  const hourSign = null; // не применимо напрямую
+  // 3. Ранние/поздние градусы ASC
+  const ascDegInSign = cusps[0] % 30;
+  if (ascDegInSign < 3) reasons.push('ВНИМАНИЕ: ASC в первых 3° знака — вопрос может быть задан слишком рано');
+  if (ascDegInSign > 27) reasons.push('ВНИМАНИЕ: ASC в последних 3° знака — вопрос может быть задан слишком поздно или ситуация уже решена');
+  // 4. Сатурн в 7 доме (препятствие для астролога)
+  // будет проверено в calculate
+
+  const isRadical = reasons.some(r => r.startsWith('Управитель'));
+  return { isRadical, reasons };
+}
+
+// Поиск вердикта
+function findVerdict(aspects, querentKey, quesitedKey) {
+  const mainAsp = aspects.find(a =>
+    a.applying === true &&
+    ((a.planet1 === querentKey && a.planet2 === quesitedKey) || (a.planet1 === quesitedKey && a.planet2 === querentKey))
+  );
+  const moonAsp = aspects.find(a =>
+    a.applying === true &&
+    ((a.planet1 === 'moon' && a.planet2 === quesitedKey) || (a.planet1 === quesitedKey && a.planet2 === 'moon'))
+  );
+  return { mainAsp, moonAsp };
+}
+
+// ═══ ГЕНЕРАЦИЯ ТЕКСТА ═══
+
+function genText(d) {
+  const { input: inp, pos, houses: h, aspects: asp, utcInfo: u, horary: hr } = d;
+  const L = [];
+
+  L.push('══════════ ХОРАРНАЯ КАРТА ══════════');
+  L.push('');
+  if (inp.question) L.push('Вопрос: ' + inp.question);
+  L.push('Дом вопроса: ' + inp.quesitedHouse);
+  L.push('Дата/время: ' + inp.date + ' ' + inp.time + ' (' + u.tzAbbr + ')');
+  L.push('Место: ' + inp.city + ' (' + inp.lat.toFixed(4) + '\u00B0, ' + inp.lon.toFixed(4) + '\u00B0)');
+
+  // Радикальность
+  L.push(''); L.push('────────── РАДИКАЛЬНОСТЬ КАРТЫ ──────────'); L.push('');
+  L.push('Управитель дня: ' + hr.planetaryHour.dayRulerName);
+  L.push('Планетарный час: ' + hr.planetaryHour.hourRulerName + ' (' + (hr.planetaryHour.isDay ? 'дневной' : 'ночной') + ' час ' + hr.planetaryHour.hourNum + ')');
+  L.push('Управитель ASC: ' + hr.ascRuler.rulerName);
+  if (hr.radical.isRadical) {
+    L.push('КАРТА РАДИКАЛЬНА: ' + hr.radical.reasons.filter(r => r.startsWith('Управитель')).join('; '));
+  } else {
+    L.push('КАРТА НЕ РАДИКАЛЬНА — управитель часа (' + hr.planetaryHour.hourRulerName + ') не совпадает с управителем ASC (' + hr.ascRuler.rulerName + ')');
+  }
+  hr.radical.reasons.filter(r => r.startsWith('ВНИМАНИЕ')).forEach(r => L.push(r));
+  if (hr.saturn7) L.push('ВНИМАНИЕ: Сатурн в 7 доме — возможное препятствие для суждения');
+
+  // Сигнификаторы
+  L.push(''); L.push('────────── СИГНИФИКАТОРЫ ──────────'); L.push('');
+  const qr = hr.ascRuler;
+  const qrPos = pos[qr.rulerKey];
+  L.push(`КВЕРЕНТ (Упр. 1 дома, ${qr.sign}): ${qr.rulerName}`);
+  L.push(`  Положение: ${fmtDeg(qrPos.longitude)}, дом ${houseOf(qrPos.longitude, h.cusps)}${qrPos.retrograde ? ' (R)' : ''}`);
+  L.push(`  Достоинство: ${getDignityText(qr.rulerKey, qrPos.longitude)}`);
+  const qrComb = getCombustion(qr.rulerKey, pos.sun.longitude, qrPos.longitude);
+  if (qrComb) L.push('  ' + qrComb);
+
+  L.push('');
+  L.push('СО-СИГНИФИКАТОР: Луна');
+  L.push(`  Положение: ${fmtDeg(pos.moon.longitude)}, дом ${houseOf(pos.moon.longitude, h.cusps)}${pos.moon.retrograde ? ' (R)' : ''}`);
+  L.push(`  Достоинство: ${getDignityText('moon', pos.moon.longitude)}`);
+
+  if (hr.quesitedRuler) {
+    const kr = hr.quesitedRuler;
+    const krPos = pos[kr.rulerKey];
+    L.push('');
+    L.push(`КВЕЗИТ (Упр. ${kr.house} дома, ${kr.sign}): ${kr.rulerName}`);
+    L.push(`  Положение: ${fmtDeg(krPos.longitude)}, дом ${houseOf(krPos.longitude, h.cusps)}${krPos.retrograde ? ' (R)' : ''}`);
+    L.push(`  Достоинство: ${getDignityText(kr.rulerKey, krPos.longitude)}`);
+    const krComb = getCombustion(kr.rulerKey, pos.sun.longitude, krPos.longitude);
+    if (krComb) L.push('  ' + krComb);
+  }
+
+  // Луна
+  L.push(''); L.push('────────── АНАЛИЗ ЛУНЫ ──────────'); L.push('');
+  L.push('Луна без курса: ' + (hr.moonVOC ? 'ДА — ситуация вряд ли изменится' : 'Нет — ситуация развивается'));
+  if (hr.moonAspects.last) L.push('Последний аспект: ' + hr.moonAspects.last.type + ' к ' + PLANET_NAMES[hr.moonAspects.last.planet]);
+  if (hr.moonAspects.next) L.push('Следующий аспект: ' + hr.moonAspects.next.type + ' к ' + PLANET_NAMES[hr.moonAspects.next.planet]);
+
+  // Рецепция
+  L.push(''); L.push('────────── РЕЦЕПЦИИ ──────────'); L.push('');
+  if (hr.reception) {
+    L.push(hr.ascRuler.rulerName + ' и ' + hr.quesitedRuler.rulerName + ': ' + hr.reception);
+  } else {
+    L.push('Взаимной рецепции между главными сигнификаторами нет');
+  }
+
+  // Вердикт
+  L.push(''); L.push('══════════ ВЕРДИКТ ══════════'); L.push('');
+  const v = hr.verdict;
+  if (v.mainAsp) {
+    L.push('[+] Сходящийся аспект между сигнификаторами:');
+    L.push(`${hr.ascRuler.rulerName} ${v.mainAsp.type} ${hr.quesitedRuler.rulerName} (орб ${v.mainAsp.orb}\u00B0)`);
+    if (v.mainAsp.type === 'Квадратура' || v.mainAsp.type === 'Оппозиция') {
+      L.push('ВЕРОЯТНЫЙ ОТВЕТ: ДА (но с трудностями и задержками)');
+    } else {
+      L.push('ВЕРОЯТНЫЙ ОТВЕТ: ДА');
+    }
+  } else if (v.moonAsp) {
+    L.push('[~] Луна делает сходящийся аспект к Квезиту:');
+    L.push(`Луна ${v.moonAsp.type} ${hr.quesitedRuler.rulerName} (орб ${v.moonAsp.orb}\u00B0)`);
+    L.push('ВЕРОЯТНЫЙ ОТВЕТ: ДА (через развитие ситуации)');
+  } else {
+    L.push('[-] Сходящихся аспектов между сигнификаторами нет');
+    L.push('ВЕРОЯТНЫЙ ОТВЕТ: НЕТ');
+  }
+
+  // Все аспекты
+  L.push(''); L.push('────────── ВСЕ АСПЕКТЫ ──────────'); L.push('');
+  if (!asp.length) L.push('Аспекты не обнаружены');
+  else asp.forEach(a => {
+    const ap = a.applying ? ' сход.' : ' расх.';
+    L.push(`${PLANET_NAMES[a.planet1]} ${a.type} ${PLANET_NAMES[a.planet2]} (${a.orb}\u00B0${ap})`);
+  });
+
+  // Планеты
+  L.push(''); L.push('────────── ПЛАНЕТЫ ──────────'); L.push('');
+  PLANET_ORDER.forEach(k => {
+    const p = pos[k]; if (!p) return;
+    const ho = houseOf(p.longitude, h.cusps);
+    const r = p.retrograde ? ' (R)' : '';
+    const dig = getDignityText(k, p.longitude);
+    const comb = getCombustion(k, pos.sun.longitude, p.longitude);
+    let line = `${PLANET_NAMES[k]}: ${fmtDeg(p.longitude)}, дом ${ho}${r} [${dig}]`;
+    if (comb) line += ' — ' + comb;
+    L.push(line);
+  });
+
+  // Дома
+  L.push(''); L.push('────────── ДОМА (РЕГИОМОНТАН) ──────────'); L.push('');
+  h.cusps.forEach((c, i) => {
+    const ruler = getHouseRuler(i + 1, h.cusps);
+    L.push(`Дом ${String(i+1).padStart(2)}: ${fmtDeg(c)}  Упр: ${ruler.rulerName}`);
+  });
+
+  // Антисы (только септенер)
+  L.push(''); L.push('────────── АНТИСЫ (СЕПТЕНЕР) ──────────'); L.push('');
+  SEPTENER.forEach(k => {
+    const p = pos[k]; if (!p) return;
+    const anti = norm(180 - (p.longitude % 360) + 180);
+    // Правильная формула антиса: зеркало по оси 0° Рак — 0° Козерог
+    // Антис = (знак Рака начало = 90°) — нет, проще:  антис lon = 180 - lon + 180 = 360 - lon? Нет.
+    // Формула: антис = abs_diff от оси Рак/Козерог. Точная: antiscion = norm(180 - lon % 360 ... )
+    // Правильно: antiscion(lon) = (180 - lon) нормализованный, если lon < 180; иначе (540 - lon)
+    // Проще всего: antiscion = norm( (0 + 180) - lon + 0 ) нет...
+    // Правильная формула антиса: для долготы L, антис = 360° − L + 0° = ... нет
+    // Antiscion: отражение относительно оси 0°Cancer(90°)–0°Capricorn(270°)
+    // Formula: antiscion_lon = norm(180 - lon)  -- НЕТ, это контра-антис
+    // ПРАВИЛЬНО: antiscion(lon) = norm(180 - (lon - 90) + 90) = norm(360 - lon) -- нет!!
+    // OK: Cancer axis (90°). Mirror: antiscion = 2*90 - lon = 180 - lon. Normalize.
+    // Пример: Sun at 10° Gemini (70°) → antiscion = 180 - 70 = 110° = 20° Cancer. ✓
+    const antiscion = norm(180 - p.longitude);
+    L.push(`${PLANET_NAMES[k]}: антис ${fmtDeg(antiscion)}`);
+  });
+
+  L.push(''); L.push('══════════════════════════════════════');
+  return L.join('\n');
+}
+
+// ═══ ИНИЦИАЛИЗАЦИЯ ═══
+
+async function initSWE() {
+  const el = document.getElementById('sweStatus');
+  try {
+    const mod = await import('https://cdn.jsdelivr.net/gh/prolaxu/swisseph-wasm@main/src/swisseph.js');
+    swe = new (mod.default || mod)();
+    await swe.initSwissEph();
+    el.textContent = 'готово'; el.className = 'status ok';
+  } catch(e) {
+    console.error('[SWE]', e);
+    el.textContent = 'ошибка'; el.className = 'status err';
+  }
+}
+
+// ═══ ГЛАВНАЯ ФУНКЦИЯ ═══
+
+window.calculate = function() {
+  const errEl = document.getElementById('error');
+  errEl.textContent = '';
+  if (!swe) { errEl.textContent = 'Swiss Ephemeris загружается...'; return; }
+
+  const btn = document.getElementById('calcBtn');
+  btn.disabled = true; btn.textContent = 'РАСЧЁТ...';
+
+  try {
+    const questionVal = document.getElementById('questionText').value.trim();
+    const quesitedHouse = parseInt(document.getElementById('quesitedHouse').value, 10);
+    const dateVal = document.getElementById('date').value;
+    const timeVal = document.getElementById('time').value;
+    const latVal = document.getElementById('lat').value;
+    const lonVal = document.getElementById('lon').value;
+    const tzVal = document.getElementById('tz').value;
+    const city = document.getElementById('city').value;
+
+    if (!dateVal || !timeVal || !latVal || !lonVal || !tzVal) {
+      throw new Error('Заполните время и выберите город.');
+    }
+
+    const [year, month, day] = dateVal.split('-').map(Number);
+    const [hour, minute] = timeVal.split(':').map(Number);
+    const lat = parseFloat(latVal), lon = parseFloat(lonVal);
+
+    const u = localToUTC(year, month, day, hour, minute, tzVal);
+    const jd = sweJulday(u.year, u.month, u.day, u.hour + u.minute/60 + u.second/3600);
+
+    const pos = calcPositions(jd);
+    const houses = calcAllHouses(jd, lat, lon);
+    const asp = calcAspects(pos);
+
+    // Хорарные расчёты
+    const ascRuler = getHouseRuler(1, houses.cusps);
+    const quesitedRuler = getHouseRuler(quesitedHouse, houses.cusps);
+    const moonVOC = isMoonVOC(jd);
+    const moonAspects = getMoonLastNext(jd, pos);
+
+    // Рецепция
+    let reception = null;
+    if (ascRuler && quesitedRuler && ascRuler.rulerKey !== quesitedRuler.rulerKey) {
+      reception = checkReception(ascRuler.rulerKey, pos[ascRuler.rulerKey].longitude, quesitedRuler.rulerKey, pos[quesitedRuler.rulerKey].longitude);
+    }
+
+    // Планетарный час
+    const localMoment = moment.tz(`${dateVal} ${timeVal}`, 'YYYY-MM-DD HH:mm', tzVal);
+    const planetaryHour = getPlanetaryHour(localMoment, lat, lon);
+
+    // Радикальность
+    const radical = checkRadicality(planetaryHour.hourRuler, ascRuler.rulerKey, houses.cusps);
+
+    // Сатурн в 7 доме
+    const saturn7 = pos.saturn ? houseOf(pos.saturn.longitude, houses.cusps) === 7 : false;
+
+    // Вердикт
+    const verdict = findVerdict(asp, ascRuler.rulerKey, quesitedRuler.rulerKey);
+
+    const inp = {
+      question: questionVal, quesitedHouse,
+      date: dateVal, time: timeVal,
+      lat, lon, city: city || ''
+    };
+
+    const data = {
+      input: inp, pos, houses, aspects: asp, utcInfo: u,
+      horary: { ascRuler, quesitedRuler, moonVOC, moonAspects, reception, planetaryHour, radical, saturn7, verdict }
+    };
+
+    document.getElementById('output').value = genText(data);
+    document.getElementById('resultBlock').style.display = 'block';
+  } catch(e) {
+    console.error(e);
+    errEl.textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'РАССЧИТАТЬ ХОРАР';
+  }
+};
+
+window.copyText = function() {
+  const ta = document.getElementById('output');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '\u2713 Скопировано'; btn.className = 'copy-btn copied';
+    setTimeout(() => { btn.textContent = '\u2398 Копировать'; btn.className = 'copy-btn'; }, 2500);
+  });
+};
+
+window.setNow = function() {
+  const now = new Date();
+  document.getElementById('date').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  document.getElementById('time').value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+};
+
+// Автозаполнение текущим временем
+document.addEventListener('DOMContentLoaded', () => { window.setNow(); });
+
+// ═══ ПОИСК ГОРОДОВ ═══
+
+let tid;
+const cityInput = document.getElementById('city');
+cityInput.addEventListener('input', function() {
+  clearTimeout(tid); closeAllLists();
+  const val = this.value; if (!val || val.length < 2) return;
+  tid = setTimeout(async () => {
+    try {
+      const resp = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=5&language=ru&format=json`);
+      const data = await resp.json(); if (!data.results) return;
+      const list = document.createElement('DIV'); list.className = 'autocomplete-items';
+      cityInput.parentNode.appendChild(list);
+      data.results.forEach(c => {
+        const item = document.createElement('DIV');
+        const region = c.admin1 ? `, ${c.admin1}` : '';
+        const country = c.country ? ` (${c.country})` : '';
+        const tz = c.timezone || 'UTC';
+        item.innerHTML = `<span class="city-name">${c.name}</span><span class="city-region">${region}${country}</span><span class="city-tz">${tz}</span>`;
+        item.addEventListener('click', () => {
+          cityInput.value = c.name;
+          document.getElementById('lat').value = c.latitude;
+          document.getElementById('lon').value = c.longitude;
+          document.getElementById('tz').value = tz;
+          closeAllLists();
+        });
+        list.appendChild(item);
+      });
+    } catch(e) { console.error(e); }
+  }, 400);
+});
+
+function closeAllLists(el) { document.querySelectorAll('.autocomplete-items').forEach(x => { if (el !== x && el !== cityInput) x.remove(); }); }
+document.addEventListener('click', e => closeAllLists(e.target));
+
+initSWE();
+</script>
+</body>
+</html>
