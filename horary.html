@@ -467,7 +467,7 @@ function calcAspects(pos) {
     if (diff < -180) diff += 360;
     const d = Math.abs(diff);
     const orb1 = PLANET_ORBS[k1] || 2, orb2 = PLANET_ORBS[k2] || 2;
-    const maxOrb = (orb1 + orb2) / 2;
+    const maxOrb = orb1 + orb2; // Моэтический орб = сумма полуорбов
     for (const angle of ASPECT_ANGLES) {
       const o = Math.abs(d - angle);
       if (o <= maxOrb) {
@@ -917,8 +917,11 @@ function checkRadicality(hourRuler, ascRulerKey, cusps) {
   const ascSign = Math.floor(norm(cusps[0]) / 30);
   // 1. Управитель часа = управитель ASC
   if (hourRuler === ascRulerKey) reasons.push('Управитель планетарного часа совпадает с управителем ASC');
-  // 2. Управитель часа той же стихии/триплицитета что и ASC
-  const hourSign = null; // не применимо напрямую
+  // 2. Управитель часа управляет триплицитетом ASC
+  const trip = TRIPLICITIES[ascSign];
+  if (trip && (trip.day === hourRuler || trip.night === hourRuler || trip.part === hourRuler)) {
+    reasons.push('Управитель часа (' + PLANET_NAMES[hourRuler] + ') управляет триплицитетом ASC');
+  }
   // 3. Ранние/поздние градусы ASC
   const ascDegInSign = cusps[0] % 30;
   if (ascDegInSign < 3) reasons.push('ВНИМАНИЕ: ASC в первых 3° знака — вопрос может быть задан слишком рано');
