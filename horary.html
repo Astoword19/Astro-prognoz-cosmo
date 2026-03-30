@@ -60,6 +60,7 @@ input::placeholder { color: #444; }
 .btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn-now { font-size: 12px; padding: 8px 18px; display: inline-block; background: transparent; border: 1px solid var(--accent-gold); color: var(--accent-gold); border-radius: 100px; cursor: pointer; transition: 0.2s; font-family: 'DM Sans', sans-serif; font-weight: 500; }
 .btn-now:hover { background: var(--accent-gold); color: #000; }
+.btn-now.active { background: var(--accent-gold); color: #000; }
 .out-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
 .out-title { font-size: 11px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; }
 .copy-btn { padding: 8px 16px; background: transparent; border: 1px solid var(--border-color); border-radius: 100px; color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s; font-family: 'DM Sans', sans-serif; }
@@ -103,7 +104,7 @@ textarea { width: 100%; padding: 24px; background: var(--bg-color); border: 1px 
 
 <div class="wrap form-wrap">
   <div style="text-align:center;margin-bottom:24px;">
-    <button class="btn-now" onclick="setNow()">⏱ Засечь текущее время</button>
+    <button class="btn-now" id="btnNow" onclick="setNow()">⏱ Засечь текущее время</button>
   </div>
   <div class="grid">
     <div class="full"><label>Суть вопроса</label><input id="questionText" placeholder="Например: Получу ли я эту работу?" autocomplete="off"></div>
@@ -258,15 +259,37 @@ function sweJulday(y, m, d, h) { return (swe.julday || swe.swe_julday).call(swe,
 function sweCalcUt(jd, body) {
   const fn = swe.calc_ut || swe.swe_calc_ut;
   const r = fn.call(swe, jd, body, SEFLG_SPEED);
+  
+  // Диагностика первых вызовов
+  if (body <= 1) console.log(`[SWE] calc_ut body=${body}: type=${typeof r}, keys=${r ? Object.keys(r) : 'null'}, val=${JSON.stringify(r)?.substring(0,300)}`);
+  
   if (r && r.xx) return r.xx;
-  if (r && r.data && Array.isArray(r.data)) return r.data;
+  if (r && r.data && Array.isArray(r.data)) {
+    // Проверяем что data не все нули
+    if (r.data.some(v => v !== 0)) return r.data;
+  }
   if (Array.isArray(r)) return r;
   if (r && r.longitude !== undefined)
     return [r.longitude, r.latitude || 0, r.distance || 0, r.longitudeSpeed || r.speedLong || 0];
+  // Попробуем достать числовые значения из объекта
   if (r && typeof r === 'object') {
     const vals = Object.values(r).filter(v => typeof v === 'number');
-    if (vals.length >= 4) return vals;
+    if (vals.length >= 4) { console.log('[SWE] Extracted numeric values:', vals); return vals; }
   }
+  // Попробуем другие методы как fallback
+  for (const altName of ['swe_calc_ut', 'calc_ut', 'calc', 'swe_calc']) {
+    if (typeof swe[altName] === 'function' && swe[altName] !== fn) {
+      try {
+        const r2 = swe[altName](jd, body, SEFLG_SPEED);
+        if (body <= 1) console.log(`[SWE] fallback ${altName}:`, JSON.stringify(r2)?.substring(0,300));
+        if (r2 && r2.xx) return r2.xx;
+        if (r2 && r2.data && Array.isArray(r2.data) && r2.data.some(v => v !== 0)) return r2.data;
+        if (Array.isArray(r2) && r2.some(v => v !== 0)) return r2;
+        if (r2 && r2.longitude !== undefined && r2.longitude !== 0) return [r2.longitude, r2.latitude||0, r2.distance||0, r2.longitudeSpeed||0];
+      } catch(e) { console.log(`[SWE] fallback ${altName} error:`, e.message); }
+    }
+  }
+  console.warn('[SWE] ALL methods returned zeros for body=' + body);
   return [0, 0, 0, 0];
 }
 
@@ -692,11 +715,29 @@ async function initSWE() {
   const el = document.getElementById('sweStatus');
   try {
     const mod = await import('https://cdn.jsdelivr.net/gh/prolaxu/swisseph-wasm@main/src/swisseph.js');
-    swe = new (mod.default || mod)();
+    const SwissEph = mod.default || mod;
+    swe = new SwissEph();
     await swe.initSwissEph();
+    
+    // Диагностика
+    const proto = Object.getOwnPropertyNames(Object.getPrototypeOf(swe));
+    console.log('[SWE] All methods:', proto.join(', '));
+    
+    const testJd = (swe.julday || swe.swe_julday).call(swe, 2014, 11, 21, 9.0, 1);
+    console.log('[SWE] Test JD:', testJd);
+    
+    for (const fnName of ['calc_ut', 'swe_calc_ut', 'calc', 'swe_calc']) {
+      if (typeof swe[fnName] === 'function') {
+        try {
+          const testResult = swe[fnName](testJd, 0, 256);
+          console.log(`[SWE] ${fnName}(jd, 0, 256):`, JSON.stringify(testResult));
+        } catch(e) { console.log(`[SWE] ${fnName} error:`, e.message); }
+      }
+    }
+    
     el.textContent = 'готово'; el.className = 'status ok';
   } catch(e) {
-    console.error('[SWE]', e);
+    console.error('[SWE] Init failed:', e);
     el.textContent = 'ошибка'; el.className = 'status err';
   }
 }
@@ -796,6 +837,10 @@ window.setNow = function() {
   const now = new Date();
   document.getElementById('date').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   document.getElementById('time').value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const btn = document.getElementById('btnNow');
+  btn.classList.add('active');
+  btn.textContent = '✓ Время засечено — ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  setTimeout(() => { btn.textContent = '⏱ Засечь текущее время'; btn.classList.remove('active'); }, 3000);
 };
 
 // Автозаполнение текущим временем
