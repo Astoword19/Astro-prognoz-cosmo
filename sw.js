@@ -1,4 +1,4 @@
-const CACHE_NAME = 'natal-chart-v11';
+const CACHE_NAME = 'natal-chart-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -31,22 +31,39 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Для API геокодинга — только онлайн (не кешируем)
-  if (e.request.url.includes('geocoding-api.open-meteo.com')) {
+  const url = e.request.url;
+
+  // Геокодинг — только онлайн
+  if (url.includes('geocoding-api.open-meteo.com')) {
     e.respondWith(fetch(e.request).catch(() => new Response('{"results":[]}', { headers: { 'Content-Type': 'application/json' } })));
     return;
   }
-  // Для WASM и CDN — cache first, then network
+
+  // CDN-библиотеки — cache first (не меняются)
+  if (url.includes('cdnjs.cloudflare.com') || url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com') || url.includes('cdn.jsdelivr.net')) {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(resp => {
+          if (resp.ok) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          }
+          return resp;
+        });
+      }).catch(() => new Response('Нет соединения', { status: 503 }))
+    );
+    return;
+  }
+
+  // HTML, JS, manifest — network first, кеш только как fallback
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(resp => {
-        if (resp.ok) {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
-        return resp;
-      });
-    }).catch(() => new Response('Нет соединения', { status: 503 }))
+    fetch(e.request).then(resp => {
+      if (resp.ok) {
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+      }
+      return resp;
+    }).catch(() => caches.match(e.request).then(cached => cached || new Response('Нет соединения', { status: 503 })))
   );
 });
