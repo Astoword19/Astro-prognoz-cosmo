@@ -86,7 +86,7 @@ textarea { width: 100%; padding: 24px; background: var(--bg-color); border: 1px 
   <div class="wrap header-inner">
     <div class="header-text">
       <h1>Хорарная карта</h1>
-      <p class="sub">Региомонтан · Птолемеевские аспекты · Планетарные часы</p>
+      <p class="sub" id="headerSub">Региомонтан · Птолемеевские аспекты · Планетарные часы</p>
     </div>
     <div class="nav-row">
       <span class="status loading" id="sweStatus">загрузка...</span>
@@ -107,6 +107,22 @@ textarea { width: 100%; padding: 24px; background: var(--bg-color); border: 1px 
     <button class="btn-now" id="btnNow" onclick="setNow()">⏱ Засечь текущее время</button>
   </div>
   <div class="grid">
+    <div>
+      <label>Система домов</label>
+      <select id="houseSystem" onchange="updateHeaderSub()">
+        <option value="R" selected>Региомонтан</option>
+        <option value="K">Кох</option>
+        <option value="P">Плацидус</option>
+      </select>
+    </div>
+    <div>
+      <label>Пол кверента</label>
+      <select id="querentGender">
+        <option value="none" selected>Не указан</option>
+        <option value="male">Мужской</option>
+        <option value="female">Женский</option>
+      </select>
+    </div>
     <div class="full"><label>Суть вопроса</label><input id="questionText" placeholder="Например: Получу ли я эту работу?" autocomplete="off"></div>
     <div class="full">
       <label>Тема вопроса (Дом Квезита)</label>
@@ -158,7 +174,7 @@ textarea { width: 100%; padding: 24px; background: var(--bg-color); border: 1px 
 </div>
 
 <div class="wrap"><div class="footer">
-  <p>Swiss Ephemeris (WASM) · Система домов: Региомонтан · Аспекты: Птолемеевские</p>
+  <p>Swiss Ephemeris (WASM) · Птолемеевские аспекты · Полные эссенциальные достоинства · Передача/собирание света · Запрещение/рефранация · Via Combusta · Неподвижные звёзды · Жребий Фортуны</p>
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
@@ -216,6 +232,100 @@ const DIGNITIES = [
   { ruler:'saturn',  exalt:'mars',   detri:'moon',     fall:'jupiter' }, // Козерог
   { ruler:'saturn',  exalt:null,     detri:'sun',      fall:null      }, // Водолей
   { ruler:'jupiter', exalt:'venus',  detri:'mercury',  fall:'mercury' }  // Рыбы
+];
+
+// ═══ ПОЛНАЯ ТАБЛИЦА ЭССЕНЦИАЛЬНЫХ ДОСТОИНСТВ ═══
+
+// Триплицитеты (Дорофей — день/ночь/участвующий)
+const TRIPLICITIES = {
+  // Огонь: Овен(0), Лев(4), Стрелец(8)
+  0: { day:'sun',     night:'jupiter', part:'saturn' },
+  4: { day:'sun',     night:'jupiter', part:'saturn' },
+  8: { day:'sun',     night:'jupiter', part:'saturn' },
+  // Земля: Телец(1), Дева(5), Козерог(9)
+  1: { day:'venus',   night:'moon',    part:'mars' },
+  5: { day:'venus',   night:'moon',    part:'mars' },
+  9: { day:'venus',   night:'moon',    part:'mars' },
+  // Воздух: Близнецы(2), Весы(6), Водолей(10)
+  2: { day:'saturn',  night:'mercury', part:'jupiter' },
+  6: { day:'saturn',  night:'mercury', part:'jupiter' },
+  10:{ day:'saturn',  night:'mercury', part:'jupiter' },
+  // Вода: Рак(3), Скорпион(7), Рыбы(11)
+  3: { day:'venus',   night:'mars',    part:'moon' },
+  7: { day:'venus',   night:'mars',    part:'moon' },
+  11:{ day:'venus',   night:'mars',    part:'moon' }
+};
+
+// Египетские термы (Птолемей)
+// Каждый знак: массив из 5 элементов [планета, конечный градус]
+const TERMS = [
+  // Овен
+  [['jupiter',6],['venus',12],['mercury',20],['mars',25],['saturn',30]],
+  // Телец
+  [['venus',8],['mercury',14],['jupiter',22],['saturn',27],['mars',30]],
+  // Близнецы
+  [['mercury',6],['jupiter',12],['venus',17],['mars',24],['saturn',30]],
+  // Рак
+  [['mars',7],['venus',13],['mercury',19],['jupiter',26],['saturn',30]],
+  // Лев
+  [['jupiter',6],['venus',11],['saturn',18],['mercury',24],['mars',30]],
+  // Дева
+  [['mercury',7],['venus',17],['jupiter',21],['mars',28],['saturn',30]],
+  // Весы
+  [['saturn',6],['mercury',14],['jupiter',21],['venus',28],['mars',30]],
+  // Скорпион
+  [['mars',7],['venus',11],['mercury',19],['jupiter',24],['saturn',30]],
+  // Стрелец
+  [['jupiter',12],['venus',17],['mercury',21],['saturn',26],['mars',30]],
+  // Козерог
+  [['mercury',7],['jupiter',14],['venus',22],['saturn',26],['mars',30]],
+  // Водолей
+  [['mercury',7],['venus',13],['jupiter',20],['mars',25],['saturn',30]],
+  // Рыбы
+  [['venus',12],['jupiter',16],['mercury',19],['mars',28],['saturn',30]]
+];
+
+// Фасы (деканаты) — Халдейский порядок
+const FACES = [
+  // Овен
+  ['mars','sun','venus'],
+  // Телец
+  ['mercury','moon','saturn'],
+  // Близнецы
+  ['jupiter','mars','sun'],
+  // Рак
+  ['venus','mercury','moon'],
+  // Лев
+  ['saturn','jupiter','mars'],
+  // Дева
+  ['sun','venus','mercury'],
+  // Весы
+  ['moon','saturn','jupiter'],
+  // Скорпион
+  ['mars','sun','venus'],
+  // Стрелец
+  ['mercury','moon','saturn'],
+  // Козерог
+  ['jupiter','mars','sun'],
+  // Водолей
+  ['venus','mercury','moon'],
+  // Рыбы
+  ['saturn','jupiter','mars']
+];
+
+// Via Combusta: 15° Весов (195°) — 15° Скорпиона (225°)
+const VIA_COMBUSTA_START = 195;
+const VIA_COMBUSTA_END = 225;
+
+// Неподвижные звёзды (эпоха 2000, прецессия ~50.3"/год)
+const FIXED_STARS = [
+  { name: 'Алголь',   lon2000: 56.17,  nature: 'Сатурн/Юпитер', meaning: 'Насилие, разрушение, опасность, потеря головы', orb: 1 },
+  { name: 'Альдебаран', lon2000: 69.78, nature: 'Марс', meaning: 'Успех через испытания, военная удача, но опасность краха', orb: 1 },
+  { name: 'Регул',    lon2000: 149.83, nature: 'Марс/Юпитер', meaning: 'Королевская звезда: успех, слава, почести, но падение при мести', orb: 1 },
+  { name: 'Спика',    lon2000: 203.83, nature: 'Венера/Марс', meaning: 'Удача, успех, защита, благосклонность', orb: 1 },
+  { name: 'Антарес',  lon2000: 249.78, nature: 'Марс/Юпитер', meaning: 'Смелость, власть, но саморазрушение, опасность', orb: 1 },
+  { name: 'Вега',     lon2000: 285.45, nature: 'Венера/Меркурий', meaning: 'Художественный талант, очарование, но ненадёжность', orb: 1 },
+  { name: 'Фомальгаут', lon2000: 333.87, nature: 'Венера/Меркурий', meaning: 'Королевская звезда: идеализм, мечтательность, успех с риском падения', orb: 1 }
 ];
 
 // Планетарные часы — последовательность Халдейского ряда
@@ -336,8 +446,8 @@ function calcPositions(jd) {
   return pos;
 }
 
-function calcAllHouses(jd, lat, lon) {
-  const { cusps, ascmc } = sweHouses(jd, lat, lon, 'R'); // Региомонтан
+function calcAllHouses(jd, lat, lon, hsys) {
+  const { cusps, ascmc } = sweHouses(jd, lat, lon, hsys || 'R');
   const asc = (!isNaN(ascmc[0])) ? ascmc[0] : 0;
   const mc  = (!isNaN(ascmc[1])) ? ascmc[1] : 0;
   let fc = cusps;
@@ -386,22 +496,276 @@ function getHouseRuler(houseNum, cusps) {
   return { house: houseNum, sign: si.sign, cuspDeg, rulerKey: dig.ruler, rulerName: PLANET_NAMES[dig.ruler] };
 }
 
-// Эссенциальные достоинства
-function getPlanetDignity(planetKey, deg) {
-  if (isNaN(deg)) return [];
+// Эссенциальные достоинства — полная оценка с баллами
+function getPlanetDignity(planetKey, deg, isDay) {
+  if (isNaN(deg) || !SEPTENER.includes(planetKey)) return { statuses: [], score: 0 };
   const si = degToSign(deg);
   const d = DIGNITIES[si.signIndex];
-  const st = [];
-  if (d.ruler === planetKey) st.push('Обитель');
-  if (d.exalt === planetKey) st.push('Экзальтация');
-  if (d.detri === planetKey) st.push('Изгнание');
-  if (d.fall === planetKey) st.push('Падение');
-  return st;
+  const degInSign = deg % 30;
+  const statuses = [];
+  let score = 0;
+
+  // Обитель (+5)
+  if (d.ruler === planetKey) { statuses.push('Обитель (+5)'); score += 5; }
+  // Экзальтация (+4)
+  if (d.exalt === planetKey) { statuses.push('Экзальтация (+4)'); score += 4; }
+  // Триплицитет (+3) — проверяем день/ночь
+  const trip = TRIPLICITIES[si.signIndex];
+  if (trip) {
+    const dayNight = (isDay !== false) ? 'day' : 'night';
+    if (trip[dayNight] === planetKey) { statuses.push('Триплицитет (+3)'); score += 3; }
+    else if (trip.part === planetKey) { statuses.push('Участ. триплицитет (+1)'); score += 1; }
+  }
+  // Терм (+2)
+  const terms = TERMS[si.signIndex];
+  if (terms) {
+    let prev = 0;
+    for (const [planet, end] of terms) {
+      if (degInSign >= prev && degInSign < end) {
+        if (planet === planetKey) { statuses.push('Терм (+2)'); score += 2; }
+        break;
+      }
+      prev = end;
+    }
+  }
+  // Фас/деканат (+1)
+  const faceIdx = Math.min(Math.floor(degInSign / 10), 2);
+  if (FACES[si.signIndex][faceIdx] === planetKey) { statuses.push('Фас (+1)'); score += 1; }
+
+  // Изгнание (-5)
+  if (d.detri === planetKey) { statuses.push('Изгнание (−5)'); score -= 5; }
+  // Падение (-4)
+  if (d.fall === planetKey) { statuses.push('Падение (−4)'); score -= 4; }
+
+  // Перегрин — нет ни одного достоинства
+  if (score === 0 && statuses.length === 0) {
+    statuses.push('Перегрин (−5)');
+    score = -5;
+  }
+
+  return { statuses, score };
 }
 
-function getDignityText(planetKey, deg) {
-  const d = getPlanetDignity(planetKey, deg);
-  return d.length ? d.join(', ') : 'Перегрин';
+function getDignityText(planetKey, deg, isDay) {
+  const d = getPlanetDignity(planetKey, deg, isDay);
+  if (d.statuses.length === 0) return 'Перегрин (−5) [Σ−5]';
+  return d.statuses.join(', ') + ` [Σ${d.score >= 0 ? '+' : ''}${d.score}]`;
+}
+
+// Проверка: дневная или ночная карта
+function isDayChart(sunLon, ascLon) {
+  // Солнце над горизонтом (от ASC через MC к DSC)
+  // Упрощённо: Солнце в домах 7-12 (над горизонтом)
+  // Точнее: разница ASC - Sun нормализованная > 180 = под горизонтом
+  let diff = norm(sunLon - ascLon);
+  return diff > 180; // Солнце над горизонтом
+}
+
+// Терм планеты в данном градусе (для рецепций)
+function getTermRuler(deg) {
+  const si = Math.floor(norm(deg) / 30);
+  const degInSign = norm(deg) % 30;
+  const terms = TERMS[si];
+  let prev = 0;
+  for (const [planet, end] of terms) {
+    if (degInSign >= prev && degInSign < end) return planet;
+    prev = end;
+  }
+  return null;
+}
+
+// Фас планеты в данном градусе
+function getFaceRuler(deg) {
+  const si = Math.floor(norm(deg) / 30);
+  const degInSign = norm(deg) % 30;
+  const faceIdx = Math.min(Math.floor(degInSign / 10), 2);
+  return FACES[si][faceIdx];
+}
+
+// Via Combusta — проверка Луны
+function isInViaCombusta(deg) {
+  const d = norm(deg);
+  return d >= VIA_COMBUSTA_START && d <= VIA_COMBUSTA_END;
+}
+
+// Неподвижные звёзды — прецессия к дате
+function getFixedStarsForJD(jd) {
+  // Юлианский день J2000.0 = 2451545.0
+  const yearsFromJ2000 = (jd - 2451545.0) / 365.25;
+  const precession = yearsFromJ2000 * (50.3 / 3600); // градусы
+  return FIXED_STARS.map(s => ({
+    ...s,
+    longitude: norm(s.lon2000 + precession)
+  }));
+}
+
+// Проверка соединений с неподвижными звёздами
+function checkFixedStars(pos, jd) {
+  const stars = getFixedStarsForJD(jd);
+  const results = [];
+  for (const pk of SEPTENER) {
+    if (!pos[pk]) continue;
+    const pLon = pos[pk].longitude;
+    for (const star of stars) {
+      let diff = Math.abs(pLon - star.longitude);
+      if (diff > 180) diff = 360 - diff;
+      if (diff <= star.orb) {
+        results.push({
+          planet: pk,
+          star: star.name,
+          orb: diff.toFixed(2),
+          nature: star.nature,
+          meaning: star.meaning
+        });
+      }
+    }
+  }
+  // Проверяем куспиды ASC и MC
+  return results;
+}
+
+// Жребий Фортуны
+function calcPartOfFortune(ascLon, sunLon, moonLon, isDay) {
+  // День: ASC + Moon - Sun; Ночь: ASC + Sun - Moon
+  if (isDay) return norm(ascLon + moonLon - sunLon);
+  else return norm(ascLon + sunLon - moonLon);
+}
+
+// ═══ ПЕРЕДАЧА СВЕТА И СОБИРАНИЕ СВЕТА ═══
+
+// Передача света (Translation of Light)
+// Планета C сначала аспектирует A, потом аспектирует B → передаёт свет
+function findTranslationOfLight(pos, querentKey, quesitedKey, aspects) {
+  const results = [];
+  // Ищем планету-посредника из септенера
+  for (const mediator of SEPTENER) {
+    if (mediator === querentKey || mediator === quesitedKey || mediator === 'moon') continue;
+    // Медиатор должен иметь сепарационный аспект с одним и аппликационный с другим
+    const aspToQuerent = aspects.find(a =>
+      ((a.planet1 === mediator && a.planet2 === querentKey) || (a.planet1 === querentKey && a.planet2 === mediator))
+    );
+    const aspToQuesited = aspects.find(a =>
+      ((a.planet1 === mediator && a.planet2 === quesitedKey) || (a.planet1 === quesitedKey && a.planet2 === mediator))
+    );
+    if (aspToQuerent && aspToQuesited) {
+      // Один расходящийся (уже был), другой сходящийся
+      if (!aspToQuerent.applying && aspToQuesited.applying) {
+        results.push({
+          mediator,
+          from: querentKey,
+          to: quesitedKey,
+          sepAspect: aspToQuerent,
+          appAspect: aspToQuesited
+        });
+      } else if (aspToQuerent.applying && !aspToQuesited.applying) {
+        results.push({
+          mediator,
+          from: quesitedKey,
+          to: querentKey,
+          sepAspect: aspToQuesited,
+          appAspect: aspToQuerent
+        });
+      }
+    }
+  }
+  // Луна как посредник
+  const moonToQuerent = aspects.find(a =>
+    ((a.planet1 === 'moon' && a.planet2 === querentKey) || (a.planet1 === querentKey && a.planet2 === 'moon'))
+  );
+  const moonToQuesited = aspects.find(a =>
+    ((a.planet1 === 'moon' && a.planet2 === quesitedKey) || (a.planet1 === quesitedKey && a.planet2 === 'moon'))
+  );
+  if (moonToQuerent && moonToQuesited) {
+    if (!moonToQuerent.applying && moonToQuesited.applying) {
+      results.push({ mediator: 'moon', from: querentKey, to: quesitedKey, sepAspect: moonToQuerent, appAspect: moonToQuesited });
+    } else if (moonToQuerent.applying && !moonToQuesited.applying) {
+      results.push({ mediator: 'moon', from: quesitedKey, to: querentKey, sepAspect: moonToQuesited, appAspect: moonToQuerent });
+    }
+  }
+  return results;
+}
+
+// Собирание света (Collection of Light)
+// Планета C медленнее A и B, обе A и B делают сходящийся аспект к C
+function findCollectionOfLight(pos, querentKey, quesitedKey, aspects) {
+  const results = [];
+  for (const collector of SEPTENER) {
+    if (collector === querentKey || collector === quesitedKey) continue;
+    const collectorSpeed = Math.abs(pos[collector]?.speed || 0);
+    const querentSpeed = Math.abs(pos[querentKey]?.speed || 0);
+    const quesitedSpeed = Math.abs(pos[quesitedKey]?.speed || 0);
+    // Коллектор должен быть медленнее обоих
+    if (collectorSpeed >= querentSpeed || collectorSpeed >= quesitedSpeed) continue;
+    
+    const aspFromQuerent = aspects.find(a =>
+      a.applying &&
+      ((a.planet1 === querentKey && a.planet2 === collector) || (a.planet1 === collector && a.planet2 === querentKey))
+    );
+    const aspFromQuesited = aspects.find(a =>
+      a.applying &&
+      ((a.planet1 === quesitedKey && a.planet2 === collector) || (a.planet1 === collector && a.planet2 === quesitedKey))
+    );
+    if (aspFromQuerent && aspFromQuesited) {
+      results.push({
+        collector,
+        aspFromQuerent,
+        aspFromQuesited
+      });
+    }
+  }
+  return results;
+}
+
+// ═══ ЗАПРЕЩЕНИЕ И РЕФРАНАЦИЯ ═══
+
+// Запрещение (Prohibition/Frustration)
+// Третья планета совершенствует аспект с одним из сигнификаторов РАНЬШЕ, чем те завершают свой аспект
+function findProhibition(pos, querentKey, quesitedKey, aspects) {
+  // Ищем сходящийся аспект между сигнификаторами
+  const mainAsp = aspects.find(a =>
+    a.applying &&
+    ((a.planet1 === querentKey && a.planet2 === quesitedKey) || (a.planet1 === quesitedKey && a.planet2 === querentKey))
+  );
+  if (!mainAsp) return null;
+  const mainOrb = parseFloat(mainAsp.orb);
+
+  const prohibitors = [];
+  for (const pk of SEPTENER) {
+    if (pk === querentKey || pk === quesitedKey) continue;
+    // Проверяем: pk делает сходящийся аспект к одному из сигнификаторов с меньшим орбом
+    const aspToQ1 = aspects.find(a =>
+      a.applying &&
+      ((a.planet1 === pk && a.planet2 === querentKey) || (a.planet1 === querentKey && a.planet2 === pk)) &&
+      parseFloat(a.orb) < mainOrb
+    );
+    const aspToQ2 = aspects.find(a =>
+      a.applying &&
+      ((a.planet1 === pk && a.planet2 === quesitedKey) || (a.planet1 === quesitedKey && a.planet2 === pk)) &&
+      parseFloat(a.orb) < mainOrb
+    );
+    if (aspToQ1) prohibitors.push({ prohibitor: pk, target: querentKey, asp: aspToQ1 });
+    if (aspToQ2) prohibitors.push({ prohibitor: pk, target: quesitedKey, asp: aspToQ2 });
+  }
+  return prohibitors.length > 0 ? prohibitors : null;
+}
+
+// Рефранация (Refranation)
+// Одна из планет ретроградна и развернётся до завершения аспекта
+function checkRefranation(pos, querentKey, quesitedKey, aspects) {
+  const mainAsp = aspects.find(a =>
+    a.applying &&
+    ((a.planet1 === querentKey && a.planet2 === quesitedKey) || (a.planet1 === quesitedKey && a.planet2 === querentKey))
+  );
+  if (!mainAsp) return null;
+  const warnings = [];
+  // Если одна из планет ретроградна
+  if (pos[querentKey]?.retrograde) {
+    warnings.push(`${PLANET_NAMES[querentKey]} ретрограден — возможна рефранация: планета может развернуться до завершения аспекта`);
+  }
+  if (pos[quesitedKey]?.retrograde) {
+    warnings.push(`${PLANET_NAMES[quesitedKey]} ретрограден — возможна рефранация: планета может развернуться до завершения аспекта`);
+  }
+  return warnings.length > 0 ? warnings : null;
 }
 
 // Сожжение / Казими / Под лучами
@@ -582,8 +946,10 @@ function findVerdict(aspects, querentKey, quesitedKey) {
 // ═══ ГЕНЕРАЦИЯ ТЕКСТА ═══
 
 function genText(d) {
-  const { input: inp, pos, houses: h, aspects: asp, utcInfo: u, horary: hr } = d;
+  const { input: inp, pos, houses: h, aspects: asp, utcInfo: u, horary: hr, isDay, jd } = d;
   const L = [];
+  const hsysNames = { R: 'Региомонтан', K: 'Кох', P: 'Плацидус' };
+  const hsysName = hsysNames[inp.hsys] || 'Региомонтан';
 
   L.push('══════════ ХОРАРНАЯ КАРТА ══════════');
   L.push('');
@@ -591,6 +957,9 @@ function genText(d) {
   L.push('Дом вопроса: ' + inp.quesitedHouse);
   L.push('Дата/время: ' + inp.date + ' ' + inp.time + ' (' + u.tzAbbr + ')');
   L.push('Место: ' + inp.city + ' (' + inp.lat.toFixed(4) + '\u00B0, ' + inp.lon.toFixed(4) + '\u00B0)');
+  L.push('Система домов: ' + hsysName);
+  L.push('Карта: ' + (isDay ? 'ДНЕВНАЯ' : 'НОЧНАЯ'));
+  if (inp.gender !== 'none') L.push('Пол кверента: ' + (inp.gender === 'male' ? 'Мужской' : 'Женский'));
 
   // Радикальность
   L.push(''); L.push('────────── РАДИКАЛЬНОСТЬ КАРТЫ ──────────'); L.push('');
@@ -603,7 +972,12 @@ function genText(d) {
     L.push('КАРТА НЕ РАДИКАЛЬНА — управитель часа (' + hr.planetaryHour.hourRulerName + ') не совпадает с управителем ASC (' + hr.ascRuler.rulerName + ')');
   }
   hr.radical.reasons.filter(r => r.startsWith('ВНИМАНИЕ')).forEach(r => L.push(r));
-  if (hr.saturn7) L.push('ВНИМАНИЕ: Сатурн в 7 доме — возможное препятствие для суждения');
+  if (hr.saturn7) L.push('⚠ Сатурн в 7 доме — возможное препятствие для суждения');
+
+  // Via Combusta
+  if (hr.moonViaCombusta) {
+    L.push('⚠ ЛУНА В VIA COMBUSTA (15° Весов–15° Скорпиона) — карта ненадёжна, суждение затруднено');
+  }
 
   // Сигнификаторы
   L.push(''); L.push('────────── СИГНИФИКАТОРЫ ──────────'); L.push('');
@@ -611,14 +985,14 @@ function genText(d) {
   const qrPos = pos[qr.rulerKey];
   L.push(`КВЕРЕНТ (Упр. 1 дома, ${qr.sign}): ${qr.rulerName}`);
   L.push(`  Положение: ${fmtDeg(qrPos.longitude)}, дом ${houseOf(qrPos.longitude, h.cusps)}${qrPos.retrograde ? ' (R)' : ''}`);
-  L.push(`  Достоинство: ${getDignityText(qr.rulerKey, qrPos.longitude)}`);
+  L.push(`  Достоинство: ${getDignityText(qr.rulerKey, qrPos.longitude, isDay)}`);
   const qrComb = getCombustion(qr.rulerKey, pos.sun.longitude, qrPos.longitude);
   if (qrComb) L.push('  ' + qrComb);
 
   L.push('');
   L.push('СО-СИГНИФИКАТОР: Луна');
   L.push(`  Положение: ${fmtDeg(pos.moon.longitude)}, дом ${houseOf(pos.moon.longitude, h.cusps)}${pos.moon.retrograde ? ' (R)' : ''}`);
-  L.push(`  Достоинство: ${getDignityText('moon', pos.moon.longitude)}`);
+  L.push(`  Достоинство: ${getDignityText('moon', pos.moon.longitude, isDay)}`);
 
   if (hr.quesitedRuler) {
     const kr = hr.quesitedRuler;
@@ -626,14 +1000,28 @@ function genText(d) {
     L.push('');
     L.push(`КВЕЗИТ (Упр. ${kr.house} дома, ${kr.sign}): ${kr.rulerName}`);
     L.push(`  Положение: ${fmtDeg(krPos.longitude)}, дом ${houseOf(krPos.longitude, h.cusps)}${krPos.retrograde ? ' (R)' : ''}`);
-    L.push(`  Достоинство: ${getDignityText(kr.rulerKey, krPos.longitude)}`);
+    L.push(`  Достоинство: ${getDignityText(kr.rulerKey, krPos.longitude, isDay)}`);
     const krComb = getCombustion(kr.rulerKey, pos.sun.longitude, krPos.longitude);
     if (krComb) L.push('  ' + krComb);
+  }
+
+  // Естественные сигнификаторы для вопросов о партнёрстве
+  if (hr.naturalSignificator) {
+    L.push('');
+    L.push('ЕСТЕСТВЕННЫЕ СИГНИФИКАТОРЫ ПАРТНЁРА:');
+    L.push('  ' + hr.naturalSignificator.label);
+    for (const nk of hr.naturalSignificator.keys) {
+      const np = pos[nk];
+      if (np) {
+        L.push(`  ${PLANET_NAMES[nk]}: ${fmtDeg(np.longitude)}, дом ${houseOf(np.longitude, h.cusps)}${np.retrograde ? ' (R)' : ''} — ${getDignityText(nk, np.longitude, isDay)}`);
+      }
+    }
   }
 
   // Луна
   L.push(''); L.push('────────── АНАЛИЗ ЛУНЫ ──────────'); L.push('');
   L.push('Луна без курса: ' + (hr.moonVOC ? 'ДА — ситуация вряд ли изменится' : 'Нет — ситуация развивается'));
+  if (hr.moonViaCombusta) L.push('Via Combusta: ДА — Луна в сожжённом пути');
   if (hr.moonAspects.last) L.push('Последний аспект: ' + hr.moonAspects.last.type + ' к ' + PLANET_NAMES[hr.moonAspects.last.planet]);
   if (hr.moonAspects.next) L.push('Следующий аспект: ' + hr.moonAspects.next.type + ' к ' + PLANET_NAMES[hr.moonAspects.next.planet]);
 
@@ -645,24 +1033,90 @@ function genText(d) {
     L.push('Взаимной рецепции между главными сигнификаторами нет');
   }
 
-  // Вердикт
+  // ═══ ВЕРДИКТ ═══
   L.push(''); L.push('══════════ ВЕРДИКТ ══════════'); L.push('');
   const v = hr.verdict;
+  let verdictGiven = false;
+
+  // 1. Прямой аспект
   if (v.mainAsp) {
     L.push('[+] Сходящийся аспект между сигнификаторами:');
     L.push(`${hr.ascRuler.rulerName} ${v.mainAsp.type} ${hr.quesitedRuler.rulerName} (орб ${v.mainAsp.orb}\u00B0)`);
+
+    // Проверка запрещения
+    if (hr.prohibition && hr.prohibition.length > 0) {
+      L.push('');
+      L.push('⚠ ЗАПРЕЩЕНИЕ:');
+      hr.prohibition.forEach(p => {
+        L.push(`  ${PLANET_NAMES[p.prohibitor]} вмешивается ${p.asp.type} к ${PLANET_NAMES[p.target]} (орб ${p.asp.orb}°) — может отменить результат`);
+      });
+    }
+
+    // Проверка рефранации
+    if (hr.refranation && hr.refranation.length > 0) {
+      L.push('');
+      L.push('⚠ РЕФРАНАЦИЯ:');
+      hr.refranation.forEach(w => L.push('  ' + w));
+    }
+
     if (v.mainAsp.type === 'Квадратура' || v.mainAsp.type === 'Оппозиция') {
       L.push('ВЕРОЯТНЫЙ ОТВЕТ: ДА (но с трудностями и задержками)');
     } else {
       L.push('ВЕРОЯТНЫЙ ОТВЕТ: ДА');
     }
-  } else if (v.moonAsp) {
+    verdictGiven = true;
+  }
+
+  // 2. Луна к квезиту
+  if (!verdictGiven && v.moonAsp) {
     L.push('[~] Луна делает сходящийся аспект к Квезиту:');
     L.push(`Луна ${v.moonAsp.type} ${hr.quesitedRuler.rulerName} (орб ${v.moonAsp.orb}\u00B0)`);
     L.push('ВЕРОЯТНЫЙ ОТВЕТ: ДА (через развитие ситуации)');
-  } else {
+    verdictGiven = true;
+  }
+
+  // 3. Передача света
+  if (!verdictGiven && hr.translation && hr.translation.length > 0) {
+    L.push('[~] ПЕРЕДАЧА СВЕТА — событие возможно через посредника:');
+    hr.translation.forEach(t => {
+      L.push(`  ${PLANET_NAMES[t.mediator]} передаёт свет от ${PLANET_NAMES[t.from]} к ${PLANET_NAMES[t.to]}`);
+      L.push(`  Расходящийся: ${t.sepAspect.type} (орб ${t.sepAspect.orb}°), Сходящийся: ${t.appAspect.type} (орб ${t.appAspect.orb}°)`);
+    });
+    L.push('ВЕРОЯТНЫЙ ОТВЕТ: ДА (через третье лицо или обстоятельства)');
+    verdictGiven = true;
+  }
+
+  // 4. Собирание света
+  if (!verdictGiven && hr.collection && hr.collection.length > 0) {
+    L.push('[~] СОБИРАНИЕ СВЕТА — медленная планета объединяет сигнификаторов:');
+    hr.collection.forEach(c => {
+      L.push(`  ${PLANET_NAMES[c.collector]} собирает свет:`);
+      L.push(`    от ${PLANET_NAMES[c.aspFromQuerent.planet1 === c.collector ? c.aspFromQuerent.planet2 : c.aspFromQuerent.planet1]}: ${c.aspFromQuerent.type} (орб ${c.aspFromQuerent.orb}°)`);
+      L.push(`    от ${PLANET_NAMES[c.aspFromQuesited.planet1 === c.collector ? c.aspFromQuesited.planet2 : c.aspFromQuesited.planet1]}: ${c.aspFromQuesited.type} (орб ${c.aspFromQuesited.orb}°)`);
+    });
+    L.push('ВЕРОЯТНЫЙ ОТВЕТ: ДА (через авторитетную фигуру или обстоятельства)');
+    verdictGiven = true;
+  }
+
+  // 5. Нет перфекции
+  if (!verdictGiven) {
     L.push('[-] Сходящихся аспектов между сигнификаторами нет');
+    L.push('    Передача и собирание света не обнаружены');
     L.push('ВЕРОЯТНЫЙ ОТВЕТ: НЕТ');
+  }
+
+  // Жребий Фортуны
+  L.push(''); L.push('────────── ЖРЕБИЙ ФОРТУНЫ ──────────'); L.push('');
+  L.push(`Фортуна: ${fmtDeg(hr.fortuneLon)}, дом ${houseOf(hr.fortuneLon, h.cusps)}`);
+  L.push(`Формула: ${isDay ? 'ASC + Луна − Солнце (день)' : 'ASC + Солнце − Луна (ночь)'}`);
+
+  // Неподвижные звёзды
+  if (hr.fixedStars && hr.fixedStars.length > 0) {
+    L.push(''); L.push('────────── НЕПОДВИЖНЫЕ ЗВЁЗДЫ ──────────'); L.push('');
+    hr.fixedStars.forEach(fs => {
+      L.push(`${PLANET_NAMES[fs.planet]} ☆ ${fs.star} (орб ${fs.orb}°) — природа ${fs.nature}`);
+      L.push(`  ${fs.meaning}`);
+    });
   }
 
   // Все аспекты
@@ -679,7 +1133,7 @@ function genText(d) {
     const p = pos[k]; if (!p) return;
     const ho = houseOf(p.longitude, h.cusps);
     const r = p.retrograde ? ' (R)' : '';
-    const dig = getDignityText(k, p.longitude);
+    const dig = SEPTENER.includes(k) ? getDignityText(k, p.longitude, isDay) : '—';
     const comb = getCombustion(k, pos.sun.longitude, p.longitude);
     let line = `${PLANET_NAMES[k]}: ${fmtDeg(p.longitude)}, дом ${ho}${r} [${dig}]`;
     if (comb) line += ' — ' + comb;
@@ -687,7 +1141,7 @@ function genText(d) {
   });
 
   // Дома
-  L.push(''); L.push('────────── ДОМА (РЕГИОМОНТАН) ──────────'); L.push('');
+  L.push(''); L.push(`────────── ДОМА (${hsysName.toUpperCase()}) ──────────`); L.push('');
   h.cusps.forEach((c, i) => {
     const ruler = getHouseRuler(i + 1, h.cusps);
     L.push(`Дом ${String(i+1).padStart(2)}: ${fmtDeg(c)}  Упр: ${ruler.rulerName}`);
@@ -697,25 +1151,56 @@ function genText(d) {
   L.push(''); L.push('────────── АНТИСЫ (СЕПТЕНЕР) ──────────'); L.push('');
   SEPTENER.forEach(k => {
     const p = pos[k]; if (!p) return;
-    const anti = norm(180 - (p.longitude % 360) + 180);
-    // Правильная формула антиса: зеркало по оси 0° Рак — 0° Козерог
-    // Антис = (знак Рака начало = 90°) — нет, проще:  антис lon = 180 - lon + 180 = 360 - lon? Нет.
-    // Формула: антис = abs_diff от оси Рак/Козерог. Точная: antiscion = norm(180 - lon % 360 ... )
-    // Правильно: antiscion(lon) = (180 - lon) нормализованный, если lon < 180; иначе (540 - lon)
-    // Проще всего: antiscion = norm( (0 + 180) - lon + 0 ) нет...
-    // Правильная формула антиса: для долготы L, антис = 360° − L + 0° = ... нет
-    // Antiscion: отражение относительно оси 0°Cancer(90°)–0°Capricorn(270°)
-    // Formula: antiscion_lon = norm(180 - lon)  -- НЕТ, это контра-антис
-    // ПРАВИЛЬНО: antiscion(lon) = norm(180 - (lon - 90) + 90) = norm(360 - lon) -- нет!!
-    // OK: Cancer axis (90°). Mirror: antiscion = 2*90 - lon = 180 - lon. Normalize.
-    // Пример: Sun at 10° Gemini (70°) → antiscion = 180 - 70 = 110° = 20° Cancer. ✓
     const antiscion = norm(180 - p.longitude);
     L.push(`${PLANET_NAMES[k]}: антис ${fmtDeg(antiscion)}`);
+  });
+
+  // Таблица эссенциальных достоинств
+  L.push(''); L.push('────────── ТАБЛИЦА ДОСТОИНСТВ (СЕПТЕНЕР) ──────────'); L.push('');
+  L.push('Планета         | Обит | Экз | Трипл | Терм | Фас | Изгн | Пад | Σ');
+  L.push('─────────────────|──────|─────|───────|──────|─────|──────|─────|────');
+  SEPTENER.forEach(k => {
+    const p = pos[k]; if (!p) return;
+    const si = degToSign(p.longitude);
+    const d = DIGNITIES[si.signIndex];
+    const degInSign = p.longitude % 30;
+    const isRuler = d.ruler === k ? '+5' : '  ';
+    const isExalt = d.exalt === k ? '+4' : '  ';
+    // Триплицитет
+    const trip = TRIPLICITIES[si.signIndex];
+    const dayNight = isDay ? 'day' : 'night';
+    let tripScore = '  ';
+    if (trip[dayNight] === k) tripScore = '+3';
+    else if (trip.part === k) tripScore = '+1';
+    // Терм
+    let termScore = '  ';
+    const terms = TERMS[si.signIndex];
+    let prev = 0;
+    for (const [planet, end] of terms) {
+      if (degInSign >= prev && degInSign < end) { if (planet === k) termScore = '+2'; break; }
+      prev = end;
+    }
+    // Фас
+    const faceIdx = Math.min(Math.floor(degInSign / 10), 2);
+    const faceScore = FACES[si.signIndex][faceIdx] === k ? '+1' : '  ';
+    const isDetri = d.detri === k ? '−5' : '  ';
+    const isFall = d.fall === k ? '−4' : '  ';
+    const dig = getPlanetDignity(k, p.longitude, isDay);
+    const total = dig.score >= 0 ? `+${dig.score}` : `${dig.score}`;
+    const name = (PLANET_NAMES[k] + '               ').substring(0, 17);
+    L.push(`${name}| ${isRuler}   | ${isExalt}  |  ${tripScore}   | ${termScore}   | ${faceScore}  | ${isDetri}   | ${isFall}  | ${total}`);
   });
 
   L.push(''); L.push('══════════════════════════════════════');
   return L.join('\n');
 }
+
+// Обновить подзаголовок при смене системы домов
+window.updateHeaderSub = function() {
+  const hsys = document.getElementById('houseSystem').value;
+  const names = { R: 'Региомонтан', K: 'Кох', P: 'Плацидус' };
+  document.getElementById('headerSub').textContent = (names[hsys] || 'Региомонтан') + ' · Птолемеевские аспекты · Планетарные часы';
+};
 
 // ═══ ИНИЦИАЛИЗАЦИЯ ═══
 
@@ -782,8 +1267,13 @@ window.calculate = function() {
     const jd = sweJulday(u.year, u.month, u.day, u.hour + u.minute/60 + u.second/3600);
 
     const pos = calcPositions(jd);
-    const houses = calcAllHouses(jd, lat, lon);
+    const hsys = document.getElementById('houseSystem').value;
+    const gender = document.getElementById('querentGender').value;
+    const houses = calcAllHouses(jd, lat, lon, hsys);
     const asp = calcAspects(pos);
+
+    // День или ночь
+    const isDay = isDayChart(pos.sun.longitude, houses.asc);
 
     // Хорарные расчёты
     const ascRuler = getHouseRuler(1, houses.cusps);
@@ -791,7 +1281,10 @@ window.calculate = function() {
     const moonVOC = isMoonVOC(jd);
     const moonAspects = getMoonLastNext(jd, pos);
 
-    // Рецепция
+    // Via Combusta
+    const moonViaCombusta = isInViaCombusta(pos.moon.longitude);
+
+    // Рецепция (расширенная — с термами)
     let reception = null;
     if (ascRuler && quesitedRuler && ascRuler.rulerKey !== quesitedRuler.rulerKey) {
       reception = checkReception(ascRuler.rulerKey, pos[ascRuler.rulerKey].longitude, quesitedRuler.rulerKey, pos[quesitedRuler.rulerKey].longitude);
@@ -810,15 +1303,45 @@ window.calculate = function() {
     // Вердикт
     const verdict = findVerdict(asp, ascRuler.rulerKey, quesitedRuler.rulerKey);
 
+    // Передача света
+    const translation = findTranslationOfLight(pos, ascRuler.rulerKey, quesitedRuler.rulerKey, asp);
+
+    // Собирание света
+    const collection = findCollectionOfLight(pos, ascRuler.rulerKey, quesitedRuler.rulerKey, asp);
+
+    // Запрещение
+    const prohibition = findProhibition(pos, ascRuler.rulerKey, quesitedRuler.rulerKey, asp);
+
+    // Рефранация
+    const refranation = checkRefranation(pos, ascRuler.rulerKey, quesitedRuler.rulerKey, asp);
+
+    // Неподвижные звёзды
+    const fixedStars = checkFixedStars(pos, jd);
+
+    // Жребий Фортуны
+    const fortuneLon = calcPartOfFortune(houses.asc, pos.sun.longitude, pos.moon.longitude, isDay);
+
+    // Естественные сигнификаторы партнёра (для вопросов о любви)
+    let naturalSignificator = null;
+    if (quesitedHouse === 7 && gender !== 'none') {
+      if (gender === 'female') naturalSignificator = { keys: ['sun','mars'], label: 'Солнце/Марс (естественные сигнификаторы мужчины для женщины)' };
+      else naturalSignificator = { keys: ['moon','venus'], label: 'Луна/Венера (естественные сигнификаторы женщины для мужчины)' };
+    }
+
     const inp = {
       question: questionVal, quesitedHouse,
       date: dateVal, time: timeVal,
-      lat, lon, city: city || ''
+      lat, lon, city: city || '', hsys, gender
     };
 
     const data = {
-      input: inp, pos, houses, aspects: asp, utcInfo: u,
-      horary: { ascRuler, quesitedRuler, moonVOC, moonAspects, reception, planetaryHour, radical, saturn7, verdict }
+      input: inp, pos, houses, aspects: asp, utcInfo: u, jd, isDay,
+      horary: {
+        ascRuler, quesitedRuler, moonVOC, moonAspects, reception,
+        planetaryHour, radical, saturn7, verdict,
+        moonViaCombusta, translation, collection, prohibition, refranation,
+        fixedStars, fortuneLon, naturalSignificator
+      }
     };
 
     document.getElementById('output').value = genText(data);
