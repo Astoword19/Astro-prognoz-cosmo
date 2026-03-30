@@ -351,16 +351,24 @@ function calcAspects(pos) {
   for (let i = 0; i < keys.length; i++) for (let j = i+1; j < keys.length; j++) {
     const k1 = keys[i], k2 = keys[j];
     if (!pos[k1] || !pos[k2] || isNaN(pos[k1].longitude) || isNaN(pos[k2].longitude)) continue;
-    let d = Math.abs(pos[k1].longitude - pos[k2].longitude); if (d > 180) d = 360 - d;
+    // Знаковая кратчайшая дуга от k1 к k2
+    let diff = pos[k2].longitude - pos[k1].longitude;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    const d = Math.abs(diff);
     const orb1 = PLANET_ORBS[k1] || 2, orb2 = PLANET_ORBS[k2] || 2;
-    const maxOrb = (orb1 + orb2) / 2; // Среднее моэтических половин
+    const maxOrb = (orb1 + orb2) / 2;
     for (const angle of ASPECT_ANGLES) {
       const o = Math.abs(d - angle);
       if (o <= maxOrb) {
-        const s1 = pos[k1].speed||0, s2 = pos[k2].speed||0, sd = s1 - s2;
-        let ap = null;
-        if (d < angle) ap = sd > 0 ? false : true; else ap = sd > 0 ? true : false;
-        asp.push({ planet1:k1, planet2:k2, type: ASPECT_NAMES[angle], angle, orb: o.toFixed(2), applying: ap });
+        const s1 = pos[k1].speed||0, s2 = pos[k2].speed||0;
+        // Скорость изменения |diff|
+        const diffRate = s2 - s1;
+        const dRate = diff >= 0 ? diffRate : -diffRate;
+        // Если d > angle и d уменьшается → сходящийся
+        // Если d < angle и d увеличивается → сходящийся
+        const applying = d > angle ? (dRate < 0) : (dRate > 0);
+        asp.push({ planet1:k1, planet2:k2, type: ASPECT_NAMES[angle], angle, orb: o.toFixed(2), applying });
       }
     }
   }

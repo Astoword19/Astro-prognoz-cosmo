@@ -1,4 +1,4 @@
-const CACHE_NAME = 'natal-chart-v12';
+const CACHE_NAME = 'natal-chart-v13';
 const ASSETS = [
   './',
   './index.html',
