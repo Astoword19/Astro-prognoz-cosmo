@@ -319,13 +319,46 @@ const VIA_COMBUSTA_END = 225;
 
 // Неподвижные звёзды (эпоха 2000, прецессия ~50.3"/год)
 const FIXED_STARS = [
-  { name: 'Алголь',   lon2000: 56.17,  nature: 'Сатурн/Юпитер', meaning: 'Насилие, разрушение, опасность, потеря головы', orb: 1 },
-  { name: 'Альдебаран', lon2000: 69.78, nature: 'Марс', meaning: 'Успех через испытания, военная удача, но опасность краха', orb: 1 },
-  { name: 'Регул',    lon2000: 149.83, nature: 'Марс/Юпитер', meaning: 'Королевская звезда: успех, слава, почести, но падение при мести', orb: 1 },
-  { name: 'Спика',    lon2000: 203.83, nature: 'Венера/Марс', meaning: 'Удача, успех, защита, благосклонность', orb: 1 },
-  { name: 'Антарес',  lon2000: 249.78, nature: 'Марс/Юпитер', meaning: 'Смелость, власть, но саморазрушение, опасность', orb: 1 },
-  { name: 'Вега',     lon2000: 285.45, nature: 'Венера/Меркурий', meaning: 'Художественный талант, очарование, но ненадёжность', orb: 1 },
-  { name: 'Фомальгаут', lon2000: 333.87, nature: 'Венера/Меркурий', meaning: 'Королевская звезда: идеализм, мечтательность, успех с риском падения', orb: 1 }
+  // 4 Королевские звёзды (Стражи Неба)
+  { name: 'Альдебаран',   lon2000: 69.78,  nature: 'Марс', meaning: 'Страж Востока: успех через испытания, военная удача, но опасность краха', orb: 1 },
+  { name: 'Регул',        lon2000: 149.83, nature: 'Марс/Юпитер', meaning: 'Страж Севера: успех, слава, почести, но падение при мести', orb: 1 },
+  { name: 'Антарес',      lon2000: 249.78, nature: 'Марс/Юпитер', meaning: 'Страж Запада: смелость, власть, но саморазрушение, опасность', orb: 1 },
+  { name: 'Фомальгаут',   lon2000: 333.87, nature: 'Венера/Меркурий', meaning: 'Страж Юга: идеализм, мечтательность, успех с риском падения', orb: 1 },
+
+  // Злые звёзды
+  { name: 'Алголь',       lon2000: 56.17,  nature: 'Сатурн/Юпитер', meaning: 'Самая злая звезда: насилие, разрушение, опасность, потеря головы', orb: 1 },
+  { name: 'Алгораб',      lon2000: 193.57, nature: 'Марс/Сатурн', meaning: 'Обман, задержки, разрушение, злой умысел, ложь', orb: 1 },
+  { name: 'Виндемиатрикс', lon2000: 189.95, nature: 'Сатурн/Меркурий', meaning: 'Потери, разочарования, вдовство, одиночество, обманутые надежды', orb: 1 },
+  { name: 'Южная Чаша',   lon2000: 198.30, nature: 'Венера/Меркурий', meaning: 'Трагедия, отравление, неизлечимые болезни, несчастья', orb: 1 },
+  { name: 'Шеат',         lon2000: 359.33, nature: 'Марс/Меркурий', meaning: 'Крушение, катастрофы, утопление, опасность от воды и стихий', orb: 1 },
+
+  // Бенефики — добрые звёзды
+  { name: 'Спика',        lon2000: 203.83, nature: 'Венера/Марс', meaning: 'Удача, успех, защита, благосклонность, таланты', orb: 1 },
+  { name: 'Вега',         lon2000: 285.45, nature: 'Венера/Меркурий', meaning: 'Художественный талант, очарование, харизма, но ненадёжность', orb: 1 },
+  { name: 'Сириус',       lon2000: 104.07, nature: 'Юпитер/Марс', meaning: 'Почести, слава, амбиции, известность, покровительство', orb: 1 },
+  { name: 'Канопус',      lon2000: 104.99, nature: 'Сатурн/Юпитер', meaning: 'Путешествия, навигация, перемена места, знание пути', orb: 1 },
+  { name: 'Процион',      lon2000: 115.78, nature: 'Меркурий/Марс', meaning: 'Поспешность, быстрые события, успех ненадёжный, резкие повороты', orb: 1 },
+
+  // Близнецы (военные карты)
+  { name: 'Кастор',       lon2000: 110.32, nature: 'Меркурий', meaning: 'Интеллект, писательство, но травмы, удары, ранения', orb: 1 },
+  { name: 'Поллукс',      lon2000: 113.22, nature: 'Марс', meaning: 'Дерзость, жестокость, боевой дух, опасность в бою', orb: 1 },
+
+  // Звёзды силы и амбиций
+  { name: 'Капелла',      lon2000: 81.83,  nature: 'Юпитер/Сатурн', meaning: 'Любопытство, успех нестандартным путём, военные почести', orb: 1 },
+  { name: 'Бетельгейзе',  lon2000: 88.78,  nature: 'Марс/Меркурий', meaning: 'Военный успех, почести, но непостоянство и опасность', orb: 1 },
+  { name: 'Беллатрикс',   lon2000: 81.00,  nature: 'Марс/Меркурий', meaning: 'Военная удача, быстрый успех, но скоротечность', orb: 1 },
+  { name: 'Ригель',       lon2000: 76.98,  nature: 'Юпитер/Сатурн', meaning: 'Образование, богатство, слава, успех в карьере', orb: 1 },
+  { name: 'Денеб Альгеди', lon2000: 323.50, nature: 'Сатурн/Юпитер', meaning: 'Справедливость, закон, но печаль и потери', orb: 1 },
+
+  // Звёзды несчастья и испытаний
+  { name: 'Полярная',     lon2000: 28.55,  nature: 'Сатурн/Венера', meaning: 'Болезни, неудачи, компасная звезда — указывает путь, но через страдания', orb: 1 },
+  { name: 'Альциона',     lon2000: 0.17,   nature: 'Луна/Марс', meaning: 'Слёзы, плач, изгнание, проблемы со зрением', orb: 1 },
+  { name: 'Преcепе',      lon2000: 127.28, nature: 'Марс/Луна', meaning: 'Болезни, слепота, буйство, опасность, массовая гибель', orb: 1 },
+
+  // Звёзды исцеления и мудрости
+  { name: 'Арктур',       lon2000: 204.17, nature: 'Юпитер/Марс', meaning: 'Почёт, богатство через путешествия, покровительство, справедливость', orb: 1 },
+  { name: 'Альферац',     lon2000: 14.30,  nature: 'Юпитер/Венера', meaning: 'Свобода, независимость, благосклонность, гармония', orb: 1 },
+  { name: 'Мирах',        lon2000: 0.42,   nature: 'Венера', meaning: 'Красота, счастье в браке, вдохновение, удача в любви', orb: 1 }
 ];
 
 // Планетарные часы — последовательность Халдейского ряда
@@ -600,7 +633,7 @@ function getFixedStarsForJD(jd) {
 }
 
 // Проверка соединений с неподвижными звёздами
-function checkFixedStars(pos, jd) {
+function checkFixedStars(pos, jd, asc, mc) {
   const stars = getFixedStarsForJD(jd);
   const results = [];
   for (const pk of SEPTENER) {
@@ -621,6 +654,24 @@ function checkFixedStars(pos, jd) {
     }
   }
   // Проверяем куспиды ASC и MC
+  if (!isNaN(asc)) {
+    for (const star of stars) {
+      let diff = Math.abs(asc - star.longitude);
+      if (diff > 180) diff = 360 - diff;
+      if (diff <= star.orb) {
+        results.push({ planet: 'ASC', star: star.name, orb: diff.toFixed(2), nature: star.nature, meaning: star.meaning });
+      }
+    }
+  }
+  if (!isNaN(mc)) {
+    for (const star of stars) {
+      let diff = Math.abs(mc - star.longitude);
+      if (diff > 180) diff = 360 - diff;
+      if (diff <= star.orb) {
+        results.push({ planet: 'MC', star: star.name, orb: diff.toFixed(2), nature: star.nature, meaning: star.meaning });
+      }
+    }
+  }
   return results;
 }
 
@@ -1117,7 +1168,8 @@ function genText(d) {
   if (hr.fixedStars && hr.fixedStars.length > 0) {
     L.push(''); L.push('────────── НЕПОДВИЖНЫЕ ЗВЁЗДЫ ──────────'); L.push('');
     hr.fixedStars.forEach(fs => {
-      L.push(`${PLANET_NAMES[fs.planet]} ☆ ${fs.star} (орб ${fs.orb}°) — природа ${fs.nature}`);
+      const pLabel = fs.planet === 'ASC' ? 'ASC' : fs.planet === 'MC' ? 'MC' : PLANET_NAMES[fs.planet];
+      L.push(`${pLabel} ☆ ${fs.star} (орб ${fs.orb}°) — природа ${fs.nature}`);
       L.push(`  ${fs.meaning}`);
     });
   }
@@ -1319,7 +1371,7 @@ window.calculate = function() {
     const refranation = checkRefranation(pos, ascRuler.rulerKey, quesitedRuler.rulerKey, asp);
 
     // Неподвижные звёзды
-    const fixedStars = checkFixedStars(pos, jd);
+    const fixedStars = checkFixedStars(pos, jd, houses.asc, houses.mc);
 
     // Жребий Фортуны
     const fortuneLon = calcPartOfFortune(houses.asc, pos.sun.longitude, pos.moon.longitude, isDay);
